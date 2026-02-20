@@ -3,177 +3,576 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ReaderPro Cloud | Andres Urrea</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <title>Dumareader</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
+
     <style>
-        :root { --p: #6366f1; --bg: #0f172a; --c: #1e293b; --t: #f8fafc; --acc: #22c55e; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--t); margin: 0; padding: 0; }
-        .card { background: var(--c); padding: 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 20px; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: var(--p); border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        
-        #login-screen { display: flex; align-items: center; justify-content: center; height: 100vh; }
-        #app { display: none; padding: 20px; max-width: 900px; margin: 0 auto; }
-        
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; margin-top: 20px; }
-        .book { background: var(--c); padding: 15px; border-radius: 10px; border: 1px solid var(--p); text-align: center; }
-        
-        /* NUEVO VISOR DIRECTO */
-        #viewer-container { width: 100%; height: 90vh; background: #1e293b; margin-top: 20px; display: none; border-radius: 10px; position: relative; border: 2px solid var(--p); overflow-y: auto; }
-        canvas { display: block; margin: 20px auto; box-shadow: 0 0 20px rgba(0,0,0,0.5); max-width: 100%; }
-        
-        .loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
+        :root {
+            --bg-color: #f9fafb;
+            --text-color: #1f2937;
+            --card-bg: #ffffff;
+            --border-color: #e5e7eb;
+            --accent: #3b82f6;
+        }
+
+        /* Temas de Lectura */
+        .theme-light { --bg-color: #ffffff; --text-color: #333333; --card-bg: #f3f4f6; }
+        .theme-sepia { --bg-color: #f4ecd8; --text-color: #5b4636; --card-bg: #eaddc5; }
+        .theme-dark { --bg-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e; --border-color: #333; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+        }
+
+        /* Utilidades UI */
+        .hidden { display: none !important; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--accent); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Visor Ebook */
+        #viewer-container { width: 100%; height: 70vh; overflow: hidden; position: relative; }
+        #viewer iframe { width: 100%; height: 100%; border: none; }
+        .epub-container { padding: 20px; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
-<div id="loader" class="loader">
-    <div style="font-size: 2rem; margin-bottom: 10px;">⚙️</div>
-    <p id="loader-text">Procesando...</p>
-</div>
+    <!-- REEMPLAZA ESTA URL CON TU WEB APP DE APPS SCRIPT -->
+    <script>
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzy25lfAqoKTKMXEnLS1whgbR3hLY6hDVYFMo16bnBFBIsSM9E0zTmvp0C_ZLNolnA1/exec"; 
+    </script>
 
-<div id="login-screen">
-    <div class="card" style="width: 320px;">
-        <h2 style="text-align: center;">📚 ReaderPro</h2>
-        <input type="text" id="user" placeholder="Usuario">
-        <input type="password" id="pass" placeholder="Contraseña">
-        <div id="login-box">
-            <button onclick="auth('login')">Entrar</button>
-            <p style="text-align:center; cursor:pointer; color:var(--p); font-size: 0.8rem;" onclick="toggleAuth(true)">¿Nuevo? Regístrate</p>
+    <!-- Header -->
+    <header class="card shadow-sm p-4 flex justify-between items-center sticky top-0 z-50">
+        <h1 class="text-2xl font-bold tracking-tighter" style="color: var(--accent);">
+            <i class="fas fa-book-open mr-2"></i>Dumareader
+        </h1>
+        <div id="user-menu" class="hidden flex items-center gap-4">
+            <span id="user-greeting" class="font-medium text-sm sm:text-base hidden sm:inline"></span>
+            <button onclick="app.logout()" class="text-red-500 hover:text-red-700 text-sm font-bold transition">
+                <i class="fas fa-sign-out-alt"></i> Salir
+            </button>
         </div>
-        <div id="register-box" style="display:none">
-            <button onclick="auth('register')" style="background:var(--acc)">Crear Cuenta</button>
-            <p style="text-align:center; cursor:pointer; color:var(--p); font-size: 0.8rem;" onclick="toggleAuth(false)">Ya tengo cuenta</p>
-        </div>
-    </div>
-</div>
-
-<div id="app">
-    <header style="display:flex; justify-content:space-between; align-items:center;">
-        <h2 style="margin:0;">Mi Biblioteca</h2>
-        <button onclick="location.reload()" style="width:auto; padding:5px 15px; background:#ef4444;">Salir</button>
     </header>
 
-    <div class="card" style="margin-top: 20px;">
-        <div style="display:flex; gap:10px;">
-            <button onclick="document.getElementById('file-in').click()" style="background:#475569">📁 Subir PDF desde PC</button>
-        </div>
-        <input type="file" id="file-in" style="display:none" accept=".pdf">
-    </div>
-
-    <div id="library" class="grid"></div>
-    
-    <div id="viewer-container">
-        <button onclick="document.getElementById('viewer-container').style.display='none'" style="position:fixed; top:20px; right:40px; padding: 10px 20px; background:red; color:white; border:none; cursor:pointer; z-index:100; border-radius: 5px;">CERRAR LECTURA</button>
-        <div id="pdf-render-area"></div>
-    </div>
-</div>
-
-<script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzzHfzJHQzSAeR1WfGFscxcwIa4pIFRPbugZTUQZFKT140XTy2vQouujrhAu1rARDZUDw/exec'; 
-    let currentUser = "";
-
-    function toggleAuth(isReg) {
-        document.getElementById('login-box').style.display = isReg ? "none" : "block";
-        document.getElementById('register-box').style.display = isReg ? "block" : "none";
-    }
-
-    async function auth(action) {
-        const user = document.getElementById('user').value;
-        const pass = document.getElementById('pass').value;
-        if(!user || !pass) return alert("Completa los campos");
-        toggleLoader(true, "Verificando...");
-        try {
-            const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action, user, pass }) });
-            const out = await res.json();
-            if(out.success) { 
-                if(action === 'register') { alert("¡Cuenta creada!"); toggleAuth(false); }
-                else { currentUser = user; showApp(); }
-            } else { alert("Error de acceso."); }
-        } catch(e) { alert("Error de red."); }
-        toggleLoader(false);
-    }
-
-    function showApp() {
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('app').style.display = 'block';
-        loadBooks();
-    }
-
-    document.getElementById('file-in').onchange = function(e) {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = async function() {
-            toggleLoader(true, "Subiendo PDF a tu nube...");
-            const base64 = reader.result.split(',')[1];
-            await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({
-                action: 'upload', user: currentUser, name: file.name,
-                type: 'pdf', fileData: base64, mimeType: file.type
-            })});
-            toggleLoader(false);
-            loadBooks();
-        };
-        reader.readAsDataURL(file);
-    };
-
-    async function loadBooks() {
-        const res = await fetch(SCRIPT_URL);
-        const data = await res.json();
-        const lib = document.getElementById('library');
-        lib.innerHTML = "";
-        data.slice(1).forEach(row => {
-            if(row[5] === currentUser) {
-                const div = document.createElement('div');
-                div.className = 'book';
-                // Usamos el ID de Drive para la descarga directa
-                const driveId = row[6] || (row[3].match(/[-\w]{25,}/) || [])[0];
-                div.innerHTML = `<h4 style="font-size:0.8rem;">${row[1]}</h4><button onclick="viewPDF('${driveId}')">Leer Ahora</button>`;
-                lib.appendChild(div);
-            }
-        });
-    }
-
-    // --- LA SOLUCIÓN DEFINITIVA: RENDERIZADO PROPIO ---
-    async function viewPDF(driveId) {
-        if(!driveId) return alert("ID de archivo no encontrado.");
-        toggleLoader(true, "Descargando y renderizando...");
+    <!-- Main Content -->
+    <main class="flex-grow flex flex-col items-center p-4 sm:p-8 w-full max-w-7xl mx-auto">
         
-        const container = document.getElementById('viewer-container');
-        const renderArea = document.getElementById('pdf-render-area');
-        renderArea.innerHTML = ""; 
-        container.style.display = 'block';
+        <!-- PANTALLA DE AUTENTICACIÓN -->
+        <div id="view-auth" class="w-full max-w-md card rounded-2xl shadow-xl p-8 mt-10">
+            <div class="flex border-b border-gray-200 mb-6 pb-2">
+                <button onclick="app.switchAuthTab('login')" id="tab-login" class="flex-1 text-center font-bold text-blue-600 border-b-2 border-blue-600 pb-2">Entrar</button>
+                <button onclick="app.switchAuthTab('register')" id="tab-register" class="flex-1 text-center font-bold text-gray-400 pb-2">Registro</button>
+            </div>
 
-        // URL de descarga directa de Google Drive
-        const url = `https://drive.google.com/uc?export=download&id=${driveId}`;
+            <!-- Login Form -->
+            <form id="form-login" onsubmit="app.handleLogin(event)">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-1">Usuario</label>
+                    <input type="text" id="login-user" required class="w-full p-3 border rounded-lg bg-transparent text-inherit outline-none focus:border-blue-500">
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium mb-1">Contraseña</label>
+                    <input type="password" id="login-pass" required class="w-full p-3 border rounded-lg bg-transparent text-inherit outline-none focus:border-blue-500">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold p-3 rounded-lg hover:bg-blue-700 transition shadow-lg">Iniciar Sesión</button>
+                <div class="mt-4 text-center">
+                    <button type="button" onclick="app.switchAuthTab('recover')" class="text-sm text-blue-500 hover:underline">¿Olvidaste tu contraseña?</button>
+                </div>
+            </form>
 
-        try {
-            const loadingTask = pdfjsLib.getDocument(url);
-            const pdf = await loadingTask.promise;
+            <!-- Register Form -->
+            <form id="form-register" class="hidden" onsubmit="app.handleRegister(event)">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-1">Correo Electrónico</label>
+                    <input type="email" id="reg-email" required class="w-full p-3 border rounded-lg bg-transparent text-inherit outline-none focus:border-blue-500">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-1">Usuario</label>
+                    <input type="text" id="reg-user" required class="w-full p-3 border rounded-lg bg-transparent text-inherit outline-none focus:border-blue-500">
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium mb-1">Contraseña</label>
+                    <input type="password" id="reg-pass" required class="w-full p-3 border rounded-lg bg-transparent text-inherit outline-none focus:border-blue-500">
+                </div>
+                <button type="submit" class="w-full bg-green-600 text-white font-bold p-3 rounded-lg hover:bg-green-700 transition shadow-lg">Crear Cuenta</button>
+            </form>
+
+            <!-- Recover Form -->
+            <form id="form-recover" class="hidden" onsubmit="app.handleRecover(event)">
+                <p class="text-sm mb-4">Ingresa tu correo y te enviaremos tus datos de acceso.</p>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium mb-1">Correo Electrónico</label>
+                    <input type="email" id="rec-email" required class="w-full p-3 border rounded-lg bg-transparent text-inherit outline-none focus:border-blue-500">
+                </div>
+                <button type="submit" class="w-full bg-gray-800 text-white font-bold p-3 rounded-lg hover:bg-gray-900 transition shadow-lg">Recuperar Datos</button>
+                <div class="mt-4 text-center">
+                    <button type="button" onclick="app.switchAuthTab('login')" class="text-sm text-blue-500 hover:underline">Volver al inicio</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- PANTALLA DE BIBLIOTECA -->
+        <div id="view-library" class="hidden w-full">
+            <div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+                <h2 class="text-3xl font-light">Mi Biblioteca</h2>
+                <div class="flex gap-2">
+                    <label class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg cursor-pointer transition shadow-md flex items-center gap-2">
+                        <i class="fas fa-upload"></i> Subir Libro
+                        <input type="file" id="file-upload" accept=".pdf,.epub" class="hidden" onchange="app.uploadFile(event)">
+                    </label>
+                    <button onclick="app.addUrlPrompt()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg transition shadow-md flex items-center gap-2">
+                        <i class="fas fa-link"></i> Añadir Enlace
+                    </button>
+                </div>
+            </div>
             
-            for(let num = 1; num <= pdf.numPages; num++) {
-                const page = await pdf.getPage(num);
-                const viewport = page.getViewport({scale: 1.5});
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-                
-                await page.render({canvasContext: context, viewport: viewport}).promise;
-                renderArea.appendChild(canvas);
-            }
-            container.scrollIntoView({ behavior: 'smooth' });
-        } catch (e) {
-            console.error(e);
-            alert("Error al cargar el PDF. Asegúrate de que el archivo en Drive sea público (Cualquier persona con el enlace).");
-        }
-        toggleLoader(false);
-    }
+            <div id="library-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <!-- Los libros se inyectan aquí -->
+            </div>
+            <div id="library-loader" class="hidden mt-10"><div class="loader"></div></div>
+            <div id="library-empty" class="hidden text-center mt-20 text-gray-500 opacity-70">
+                <i class="fas fa-books text-6xl mb-4"></i>
+                <p>Tu biblioteca está vacía. Sube un libro para empezar.</p>
+            </div>
+        </div>
 
-    function toggleLoader(show, text = "") {
-        document.getElementById('loader').style.display = show ? 'flex' : 'none';
-        document.getElementById('loader-text').innerText = text;
-    }
-</script>
+        <!-- PANTALLA DEL LECTOR -->
+        <div id="view-reader" class="hidden w-full h-full flex flex-col">
+            <!-- Barra de herramientas del lector -->
+            <div class="card shadow-sm p-3 mb-4 rounded-xl flex flex-wrap justify-between items-center gap-4">
+                <button onclick="app.showLibrary()" class="px-3 py-1 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </button>
+                <h3 id="reader-title" class="font-bold truncate flex-1 text-center">Título del libro</h3>
+                
+                <div class="flex items-center gap-3">
+                    <!-- Tema -->
+                    <button onclick="app.setTheme('light')" class="w-8 h-8 rounded-full bg-white border border-gray-300 text-black flex items-center justify-center" title="Día"><i class="fas fa-sun"></i></button>
+                    <button onclick="app.setTheme('sepia')" class="w-8 h-8 rounded-full bg-[#f4ecd8] border border-gray-400 text-[#5b4636] flex items-center justify-center" title="Sepia"><i class="fas fa-coffee"></i></button>
+                    <button onclick="app.setTheme('dark')" class="w-8 h-8 rounded-full bg-gray-800 border border-gray-600 text-white flex items-center justify-center" title="Noche"><i class="fas fa-moon"></i></button>
+                    
+                    <div class="w-px h-6 bg-gray-300 mx-1"></div>
+                    
+                    <!-- Fuente -->
+                    <button onclick="app.changeFontSize(1)" class="p-2 hover:bg-gray-200 rounded transition" title="Aumentar texto"><i class="fas fa-search-plus"></i></button>
+                    <button onclick="app.changeFontSize(-1)" class="p-2 hover:bg-gray-200 rounded transition" title="Reducir texto"><i class="fas fa-search-minus"></i></button>
+                    
+                    <div class="w-px h-6 bg-gray-300 mx-1"></div>
+                    
+                    <!-- Notas -->
+                    <button onclick="app.toggleNotes()" class="p-2 text-blue-500 hover:bg-blue-100 rounded transition" title="Notas y Señaladores"><i class="fas fa-edit"></i></button>
+                </div>
+            </div>
+
+            <!-- Contenedor Principal Lector + Notas -->
+            <div class="flex flex-1 gap-4 relative">
+                
+                <!-- Área del Lector -->
+                <div class="flex-1 card rounded-xl shadow-inner relative flex flex-col">
+                    <div id="viewer-container" class="flex-1 w-full">
+                        <div id="viewer" class="w-full h-full"></div>
+                    </div>
+                    
+                    <!-- Controles de página para ePub -->
+                    <div id="epub-controls" class="hidden p-2 flex justify-between items-center border-t border-gray-200">
+                        <button onclick="app.prevPage()" class="px-4 py-2 hover:bg-gray-200 rounded"><i class="fas fa-chevron-left"></i> Anterior</button>
+                        <span id="epub-progress" class="text-sm font-mono opacity-60"></span>
+                        <button onclick="app.nextPage()" class="px-4 py-2 hover:bg-gray-200 rounded">Siguiente <i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+
+                <!-- Panel de Notas Lateral -->
+                <div id="notes-panel" class="hidden w-80 card rounded-xl shadow-lg p-4 flex flex-col h-[70vh] absolute right-0 top-0 z-10 md:relative">
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="font-bold"><i class="fas fa-sticky-note text-yellow-500"></i> Mis Notas</h4>
+                        <button onclick="app.toggleNotes()" class="text-gray-500 hover:text-red-500"><i class="fas fa-times"></i></button>
+                    </div>
+                    <textarea id="book-notes" class="flex-1 w-full p-3 border rounded resize-none bg-transparent text-inherit outline-none focus:border-blue-500" placeholder="Escribe tus apuntes, avances o ideas aquí..."></textarea>
+                    <button onclick="app.saveNotes()" class="w-full mt-3 bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition">Guardar Notas</button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="p-6 text-center text-sm opacity-70 mt-auto border-t border-gray-200 card">
+        <p>Creado por <strong>Andrés Urrea</strong> | Desarrollador Multimedia y Web</p>
+        <p><i class="fab fa-whatsapp text-green-500"></i> WhatsApp: <a href="https://wa.me/56930763222" target="_blank" class="hover:underline hover:text-blue-500">+56 9 3076 3222</a></p>
+    </footer>
+
+    <!-- Lógica de la Aplicación -->
+    <script>
+        const app = {
+            user: null,
+            library: [],
+            currentBook: null,
+            rendition: null,
+            bookObj: null,
+            fontSize: 100,
+
+            init() {
+                if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === "URL_DE_TU_APPS_SCRIPT_AQUI") {
+                    Swal.fire('Atención', 'Debes configurar la URL de Apps Script en el archivo HTML.', 'warning');
+                }
+                const savedUser = localStorage.getItem('duma_user');
+                if (savedUser) {
+                    this.user = JSON.parse(savedUser);
+                    this.showLibrary();
+                } else {
+                    this.showView('auth');
+                }
+                
+                // Cargar tema guardado
+                const savedTheme = localStorage.getItem('duma_theme') || 'light';
+                this.setTheme(savedTheme);
+            },
+
+            // --- NAVEGACIÓN Y UI ---
+            showView(viewId) {
+                document.getElementById('view-auth').classList.add('hidden');
+                document.getElementById('view-library').classList.add('hidden');
+                document.getElementById('view-reader').classList.add('hidden');
+                document.getElementById('user-menu').classList.add('hidden');
+
+                if (viewId === 'auth') {
+                    document.getElementById('view-auth').classList.remove('hidden');
+                } else if (viewId === 'library') {
+                    document.getElementById('view-library').classList.remove('hidden');
+                    document.getElementById('user-menu').classList.remove('hidden');
+                    document.getElementById('user-greeting').textContent = `Hola, ${this.user.username}`;
+                    this.loadLibrary();
+                } else if (viewId === 'reader') {
+                    document.getElementById('view-reader').classList.remove('hidden');
+                }
+            },
+
+            switchAuthTab(tab) {
+                ['login', 'register', 'recover'].forEach(t => {
+                    document.getElementById(`form-${t}`).classList.add('hidden');
+                });
+                document.getElementById(`tab-login`).classList.replace('text-blue-600', 'text-gray-400');
+                document.getElementById(`tab-login`).classList.replace('border-blue-600', 'border-transparent');
+                document.getElementById(`tab-register`).classList.replace('text-blue-600', 'text-gray-400');
+                
+                document.getElementById(`form-${tab}`).classList.remove('hidden');
+                if(tab !== 'recover') {
+                    document.getElementById(`tab-${tab}`).classList.replace('text-gray-400', 'text-blue-600');
+                    if(tab === 'login') document.getElementById(`tab-login`).classList.replace('border-transparent', 'border-blue-600');
+                }
+            },
+
+            setTheme(theme) {
+                document.body.className = `theme-${theme}`;
+                localStorage.setItem('duma_theme', theme);
+                if (this.rendition) {
+                    this.rendition.themes.select(theme);
+                }
+            },
+
+            // --- API CALLS ---
+            async apiCall(data, loadingMsg) {
+                if (loadingMsg) Swal.fire({ title: loadingMsg, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                
+                const formData = new URLSearchParams();
+                for (const key in data) formData.append(key, data[key]);
+
+                try {
+                    const response = await fetch(APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        body: formData,
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                    });
+                    const result = await response.json();
+                    if (loadingMsg) Swal.close();
+                    return result;
+                } catch (error) {
+                    if (loadingMsg) Swal.close();
+                    Swal.fire('Error de conexión', 'No se pudo conectar con el servidor.', 'error');
+                    console.error(error);
+                    return { status: 'error' };
+                }
+            },
+
+            // --- AUTENTICACIÓN ---
+            async handleLogin(e) {
+                e.preventDefault();
+                const user = document.getElementById('login-user').value;
+                const pass = document.getElementById('login-pass').value;
+                
+                const res = await this.apiCall({ action: 'login', username: user, password: pass }, "Iniciando sesión...");
+                if (res.status === 'success') {
+                    this.user = { id: res.userId, username: res.username };
+                    localStorage.setItem('duma_user', JSON.stringify(this.user));
+                    this.showLibrary();
+                } else {
+                    Swal.fire('Error', res.message, 'error');
+                }
+            },
+
+            async handleRegister(e) {
+                e.preventDefault();
+                const email = document.getElementById('reg-email').value;
+                const user = document.getElementById('reg-user').value;
+                const pass = document.getElementById('reg-pass').value;
+                
+                const res = await this.apiCall({ action: 'register', email: email, username: user, password: pass }, "Creando cuenta...");
+                if (res.status === 'success') {
+                    this.user = { id: res.userId, username: res.username };
+                    localStorage.setItem('duma_user', JSON.stringify(this.user));
+                    Swal.fire('¡Éxito!', res.message, 'success').then(() => this.showLibrary());
+                } else {
+                    Swal.fire('Error', res.message, 'error');
+                }
+            },
+
+            async handleRecover(e) {
+                e.preventDefault();
+                const email = document.getElementById('rec-email').value;
+                const res = await this.apiCall({ action: 'recover', email: email }, "Buscando datos...");
+                if (res.status === 'success') {
+                    Swal.fire('Enviado', res.message, 'success').then(() => this.switchAuthTab('login'));
+                } else {
+                    Swal.fire('Error', res.message, 'error');
+                }
+            },
+
+            logout() {
+                this.user = null;
+                localStorage.removeItem('duma_user');
+                this.showView('auth');
+            },
+
+            // --- GESTIÓN DE BIBLIOTECA ---
+            async loadLibrary() {
+                this.showView('library');
+                document.getElementById('library-loader').classList.remove('hidden');
+                document.getElementById('library-grid').innerHTML = '';
+                document.getElementById('library-empty').classList.add('hidden');
+
+                const res = await this.apiCall({ action: 'getLibrary', userId: this.user.id });
+                document.getElementById('library-loader').classList.add('hidden');
+
+                if (res.status === 'success') {
+                    this.library = res.data;
+                    if (this.library.length === 0) {
+                        document.getElementById('library-empty').classList.remove('hidden');
+                    } else {
+                        this.renderLibraryGrid();
+                    }
+                }
+            },
+
+            renderLibraryGrid() {
+                const grid = document.getElementById('library-grid');
+                grid.innerHTML = '';
+                this.library.forEach(book => {
+                    const icon = book.type === 'pdf' ? 'fa-file-pdf text-red-500' : 
+                                 book.type === 'epub' ? 'fa-book text-green-500' : 'fa-link text-blue-500';
+                    
+                    const progressVal = book.progress ? "Continuar" : "Empezar a leer";
+
+                    grid.innerHTML += `
+                        <div class="card rounded-xl p-5 shadow-sm hover:shadow-md transition flex flex-col relative group">
+                            <button onclick="app.deleteBook('${book.id}')" class="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100 transition bg-white rounded-full p-2 shadow" title="Eliminar">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            <div class="text-4xl text-center mb-4"><i class="fas ${icon}"></i></div>
+                            <h4 class="font-bold text-lg mb-1 truncate" title="${book.title}">${book.title}</h4>
+                            <p class="text-xs text-gray-500 uppercase tracking-widest mb-4">${book.type}</p>
+                            
+                            <div class="mt-auto pt-4 border-t border-gray-100">
+                                <button onclick="app.openBook('${book.id}')" class="w-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white py-2 rounded font-medium transition text-sm">
+                                    ${progressVal}
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+            },
+
+            async uploadFile(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                if (file.size > 15 * 1024 * 1024) { // Limite 15MB aprox para base64 en GAS
+                    Swal.fire('Archivo muy grande', 'Por favor sube archivos menores a 15MB.', 'warning');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = async (ev) => {
+                    const base64 = ev.target.result.split(',')[1];
+                    const res = await this.apiCall({
+                        action: 'uploadBook',
+                        userId: this.user.id,
+                        filename: file.name,
+                        mimeType: file.type,
+                        base64: base64,
+                        title: file.name.replace(/\.[^/.]+$/, "")
+                    }, "Subiendo libro a la nube...");
+
+                    if (res.status === 'success') {
+                        Swal.fire('¡Listo!', 'Libro añadido a tu biblioteca', 'success');
+                        this.loadLibrary();
+                    } else {
+                        Swal.fire('Error', res.message, 'error');
+                    }
+                };
+                reader.readAsDataURL(file);
+            },
+
+            async addUrlPrompt() {
+                const { value: url } = await Swal.fire({
+                    title: 'Añadir enlace (PDF, Artículo o Web)',
+                    input: 'url',
+                    inputPlaceholder: 'https://...',
+                    showCancelButton: true
+                });
+
+                if (url) {
+                    const { value: title } = await Swal.fire({
+                        title: 'Título para este enlace',
+                        input: 'text',
+                        showCancelButton: true
+                    });
+                    
+                    if (title) {
+                        const res = await this.apiCall({
+                            action: 'addBookUrl', userId: this.user.id, url: url, title: title
+                        }, "Guardando enlace...");
+                        if(res.status === 'success') this.loadLibrary();
+                    }
+                }
+            },
+
+            async deleteBook(bookId) {
+                const conf = await Swal.fire({
+                    title: '¿Eliminar libro?',
+                    text: "Se borrará de tu biblioteca y de la nube.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33'
+                });
+
+                if (conf.isConfirmed) {
+                    const res = await this.apiCall({ action: 'deleteBook', userId: this.user.id, bookId: bookId }, "Eliminando...");
+                    if (res.status === 'success') this.loadLibrary();
+                }
+            },
+
+            // --- LECTOR DE LIBROS ---
+            openBook(bookId) {
+                this.currentBook = this.library.find(b => b.id === bookId);
+                if (!this.currentBook) return;
+
+                document.getElementById('reader-title').textContent = this.currentBook.title;
+                document.getElementById('book-notes').value = this.currentBook.notes || '';
+                this.showView('reader');
+
+                const viewer = document.getElementById('viewer');
+                viewer.innerHTML = '';
+                document.getElementById('epub-controls').classList.add('hidden');
+                
+                // Limpiar instancia previa
+                if (this.bookObj) { this.bookObj.destroy(); this.bookObj = null; }
+
+                if (this.currentBook.type === 'epub') {
+                    this.loadEpub();
+                } else {
+                    // Para PDF y URL usamos un iframe integrado
+                    viewer.innerHTML = `<iframe src="${this.currentBook.url}" allowfullscreen></iframe>`;
+                }
+            },
+
+            loadEpub() {
+                document.getElementById('epub-controls').classList.remove('hidden');
+                const url = this.currentBook.url; // Nota: Si Drive bloquea CORS, el iframe de PDF es más seguro. Para epub usamos la URL directa.
+                
+                this.bookObj = ePub(url);
+                this.rendition = this.bookObj.renderTo("viewer", {
+                    width: "100%", height: "100%", spread: "none"
+                });
+
+                // Registrar temas en epub.js
+                this.rendition.themes.register("light", { "body": { "background": "#ffffff", "color": "#333333" }});
+                this.rendition.themes.register("sepia", { "body": { "background": "#f4ecd8", "color": "#5b4636" }});
+                this.rendition.themes.register("dark", { "body": { "background": "#121212", "color": "#e0e0e0" }});
+                this.setTheme(localStorage.getItem('duma_theme') || 'light');
+                this.changeFontSize(0); // Aplicar tamaño guardado/default
+
+                // Mostrar donde quedó
+                const location = this.currentBook.progress;
+                this.rendition.display(location ? location : undefined);
+
+                this.rendition.on("relocated", (location) => {
+                    document.getElementById('epub-progress').textContent = location.start.cfi;
+                    // Auto-guardar progreso
+                    this.apiCall({
+                        action: 'updateProgress', 
+                        userId: this.user.id, 
+                        bookId: this.currentBook.id, 
+                        progress: location.start.cfi,
+                        notes: null
+                    });
+                    this.currentBook.progress = location.start.cfi;
+                });
+            },
+
+            prevPage() { if (this.rendition) this.rendition.prev(); },
+            nextPage() { if (this.rendition) this.rendition.next(); },
+
+            changeFontSize(step) {
+                this.fontSize += (step * 10);
+                if(this.fontSize < 50) this.fontSize = 50;
+                if(this.fontSize > 200) this.fontSize = 200;
+                
+                if (this.rendition) {
+                    this.rendition.themes.fontSize(`${this.fontSize}%`);
+                }
+            },
+
+            toggleNotes() {
+                const panel = document.getElementById('notes-panel');
+                panel.classList.toggle('hidden');
+            },
+
+            async saveNotes() {
+                const notes = document.getElementById('book-notes').value;
+                const res = await this.apiCall({
+                    action: 'updateProgress',
+                    userId: this.user.id,
+                    bookId: this.currentBook.id,
+                    progress: this.currentBook.progress,
+                    notes: notes
+                }, "Guardando notas...");
+
+                if (res.status === 'success') {
+                    this.currentBook.notes = notes;
+                    Swal.fire({ title: 'Guardado', icon: 'success', timer: 1000, showConfirmButton: false });
+                }
+            }
+        };
+
+        // Iniciar App cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', () => app.init());
+
+    </script>
 </body>
 </html>
