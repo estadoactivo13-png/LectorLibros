@@ -3,76 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ReaderPro Cloud | Andres Urrea</title>
+    <title>ReaderPro Cloud</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root { --p: #6366f1; --bg: #0f172a; --c: #1e293b; --t: #f8fafc; --acc: #22c55e; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--t); margin: 0; padding: 0; overflow-x: hidden; }
-        .card { background: var(--c); padding: 25px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 20px; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--t); margin: 0; padding: 0; }
+        .card { background: var(--c); padding: 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 20px; }
         input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: var(--p); border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        button:hover { filter: brightness(1.2); }
+        button { width: 100%; padding: 12px; background: var(--p); border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: bold; }
         
         #login-screen { display: flex; align-items: center; justify-content: center; height: 100vh; }
-        #app { display: none; padding: 20px; max-width: 1000px; margin: 0 auto; }
+        #app { display: none; padding: 20px; max-width: 900px; margin: 0 auto; }
         
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; }
-        .book { background: var(--c); padding: 15px; border-radius: 10px; border: 1px solid #334155; text-align: center; transition: 0.3s; }
-        .book:hover { border-color: var(--p); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; margin-top: 20px; }
+        .book { background: var(--c); padding: 15px; border-radius: 10px; border: 1px solid var(--p); text-align: center; }
         
-        #viewer-container { width: 100%; height: 90vh; background: #e2e8f0; margin-top: 20px; display: none; border-radius: 10px; overflow: hidden; position: relative; border: 4px solid var(--c); }
-        iframe { width: 100%; height: 100%; border: none; background: white; }
+        /* Estilos del Visor */
+        #viewer-container { width: 100%; height: 90vh; background: #1e293b; margin-top: 20px; display: none; border-radius: 10px; position: relative; border: 2px solid var(--p); }
+        iframe { width: 100%; height: 100%; border: none; background: white; border-radius: 8px; }
         
         .loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--p); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
 <div id="loader" class="loader">
-    <div class="spinner"></div>
-    <p id="loader-text">Conectando...</p>
+    <div style="font-size: 2rem; margin-bottom: 10px;">⚙️</div>
+    <p id="loader-text">Conectando con Google Drive...</p>
 </div>
 
 <div id="login-screen">
-    <div class="card" style="width: 350px;">
-        <h2 id="auth-title" style="text-align: center; margin-top: 0;">📚 ReaderPro</h2>
+    <div class="card" style="width: 320px;">
+        <h2 id="auth-title" style="text-align: center;">📚 ReaderPro</h2>
         <input type="text" id="user" placeholder="Usuario">
         <input type="password" id="pass" placeholder="Contraseña">
         
         <div id="login-box">
             <button onclick="auth('login')">Entrar</button>
-            <p style="text-align:center; cursor:pointer; color:var(--p); font-size: 0.9rem;" onclick="toggleAuth(true)">¿No tienes cuenta? Regístrate</p>
+            <p style="text-align:center; cursor:pointer; color:var(--p); font-size: 0.8rem;" onclick="toggleAuth(true)">¿Nuevo? Regístrate</p>
         </div>
         
         <div id="register-box" style="display:none">
-            <button onclick="auth('register')" style="background:var(--acc)">Crear mi Cuenta</button>
-            <p style="text-align:center; cursor:pointer; color:var(--p); font-size: 0.9rem;" onclick="toggleAuth(false)">Volver al Login</p>
+            <button onclick="auth('register')" style="background:var(--acc)">Crear Cuenta</button>
+            <p style="text-align:center; cursor:pointer; color:var(--p); font-size: 0.8rem;" onclick="toggleAuth(false)">Ya tengo cuenta</p>
         </div>
     </div>
 </div>
 
 <div id="app">
     <header style="display:flex; justify-content:space-between; align-items:center;">
-        <h2 style="margin:0;">📖 Mi Biblioteca Cloud</h2>
-        <button onclick="location.reload()" style="width:auto; padding:8px 15px; background:#ef4444;">Salir</button>
+        <h2 style="margin:0;">Mi Biblioteca</h2>
+        <button onclick="location.reload()" style="width:auto; padding:5px 15px; background:#ef4444;">Salir</button>
     </header>
 
     <div class="card" style="margin-top: 20px;">
-        <input type="text" id="link-url" placeholder="Pega link de PDF o carpeta de Drive...">
+        <input type="text" id="link-url" placeholder="Pega link de PDF o Drive...">
         <div style="display:flex; gap:10px;">
-            <button onclick="document.getElementById('file-in').click()" style="background:#475569">📁 Subir PDF/EPUB</button>
-            <button onclick="upload('link')">🔗 Agregar Link</button>
+            <button onclick="document.getElementById('file-in').click()" style="background:#475569">📁 Subir Archivo</button>
+            <button onclick="upload('link')">🔗 Usar Enlace</button>
         </div>
-        <input type="file" id="file-in" style="display:none" accept=".pdf,.epub">
+        <input type="file" id="file-in" style="display:none">
     </div>
 
     <div id="library" class="grid"></div>
     
     <div id="viewer-container">
-        <button onclick="closeViewer()" style="position:absolute; top:10px; right:10px; width:40px; height:40px; border-radius:50%; background:#ef4444; z-index:10;">✕</button>
-        <div id="iframe-wrapper" style="width:100%; height:100%;"></div>
+        <button onclick="document.getElementById('viewer-container').style.display='none'" style="position:absolute; top:-15px; right:-15px; width:30px; height:30px; border-radius:50%; background:red; color:white; border:none; cursor:pointer; z-index:100;">X</button>
+        <div id="iframe-box" style="width:100%; height:100%;"></div>
     </div>
 </div>
 
@@ -81,25 +78,25 @@
     let currentUser = "";
 
     function toggleAuth(isReg) {
-        document.getElementById('auth-title').innerText = isReg ? "📝 Nuevo Registro" : "📚 ReaderPro";
+        document.getElementById('auth-title').innerText = isReg ? "Registro" : "ReaderPro";
         document.getElementById('login-box').style.display = isReg ? "none" : "block";
         document.getElementById('register-box').style.display = isReg ? "block" : "none";
     }
 
     async function auth(action) {
-        const user = document.getElementById('user').value.trim();
-        const pass = document.getElementById('pass').value.trim();
+        const user = document.getElementById('user').value;
+        const pass = document.getElementById('pass').value;
         if(!user || !pass) return alert("Completa los campos");
 
-        toggleLoader(true, "Validando...");
+        toggleLoader(true, "Verificando...");
         try {
             const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action, user, pass }) });
             const out = await res.json();
             if(out.success) {
-                if(action === 'register') { alert("Registro exitoso"); toggleAuth(false); }
+                if(action === 'register') { alert("¡Cuenta creada!"); toggleAuth(false); }
                 else { currentUser = user; showApp(); }
-            } else { alert(out.msg || "Error en el acceso"); }
-        } catch (e) { alert("Error de servidor"); }
+            } else { alert("Error: Usuario o clave incorrectos."); }
+        } catch(e) { alert("Error de conexión"); }
         toggleLoader(false);
     }
 
@@ -112,13 +109,12 @@
     async function upload(mode) {
         let payload = { action: 'upload', user: currentUser };
         if(mode === 'link') {
-            const url = document.getElementById('link-url').value.trim();
+            const url = document.getElementById('link-url').value;
             if(!url) return;
             payload.name = "Enlace Externo"; payload.url = url; payload.type = "pdf";
         }
-        toggleLoader(true, "Procesando...");
+        toggleLoader(true, "Guardando...");
         await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
-        document.getElementById('link-url').value = "";
         toggleLoader(false);
         loadBooks();
     }
@@ -127,11 +123,11 @@
         const file = e.target.files[0];
         const reader = new FileReader();
         reader.onload = async function() {
-            toggleLoader(true, "Subiendo archivo...");
+            toggleLoader(true, "Subiendo a Drive...");
             const base64 = reader.result.split(',')[1];
             await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({
                 action: 'upload', user: currentUser, name: file.name,
-                type: file.name.toLowerCase().endsWith('.epub') ? 'epub' : 'pdf',
+                type: file.name.endsWith('.epub') ? 'epub' : 'pdf',
                 fileData: base64, mimeType: file.type
             })});
             toggleLoader(false);
@@ -149,38 +145,33 @@
             if(row[5] === currentUser) {
                 const div = document.createElement('div');
                 div.className = 'book';
-                div.innerHTML = `<h4 style="font-size:0.85rem;">${row[1]}</h4><button onclick="openViewer('${row[3]}')">Leer ahora</button>`;
+                div.innerHTML = `<h4 style="font-size:0.8rem; margin:0 0 10px 0;">${row[1]}</h4><button onclick="openViewer('${row[3]}')">Leer</button>`;
                 lib.appendChild(div);
             }
         });
     }
 
+    // --- FUNCIÓN DE VISUALIZACIÓN CORREGIDA ---
     function openViewer(url) {
         const container = document.getElementById('viewer-container');
-        const wrapper = document.getElementById('iframe-wrapper');
+        const box = document.getElementById('iframe-box');
         container.style.display = 'block';
         
-        let viewerUrl = url;
+        let finalUrl = "";
 
-        // SI ES DE GOOGLE DRIVE, FORZAMOS EL VISOR DE GOOGLE DOCS
         if (url.includes('drive.google.com')) {
-            const fileId = url.match(/[-\w]{25,}/);
-            if (fileId) {
-                // Formato de previsualización que Google suele permitir en iframes
-                viewerUrl = `https://drive.google.com/file/d/${fileId[0]}/preview`;
-            }
+            // Extraer ID de Drive
+            const idMatch = url.match(/[-\w]{25,}/);
+            const driveId = idMatch ? idMatch[0] : "";
+            // Usar el visor de Google Docs para evitar bloqueos de frame
+            finalUrl = `https://docs.google.com/viewer?srcid=${driveId}&pid=explorer&efh=false&a=v&chrome=false&embedded=true`;
         } else {
-            // SI ES UN PDF EXTERNO, USAMOS EL VISOR DE GOOGLE PARA EVITAR BLOQUEOS
-            viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+            // Para enlaces externos genéricos
+            finalUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
         }
         
-        wrapper.innerHTML = `<iframe src="${viewerUrl}" allow="autoplay"></iframe>`;
+        box.innerHTML = `<iframe src="${finalUrl}" allow="autoplay"></iframe>`;
         container.scrollIntoView({ behavior: 'smooth' });
-    }
-
-    function closeViewer() {
-        document.getElementById('viewer-container').style.display = 'none';
-        document.getElementById('iframe-wrapper').innerHTML = "";
     }
 
     function toggleLoader(show, text = "") {
