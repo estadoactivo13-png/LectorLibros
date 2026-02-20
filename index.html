@@ -8,9 +8,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
-    <!-- Motores de lectura -->
     <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
 
     <style>
         :root {
@@ -33,41 +31,15 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            margin: 0;
         }
 
         .card { background-color: var(--card-bg); border: 1px solid var(--border-color); }
         .hidden { display: none !important; }
-        
-        /* Contenedor del lector */
-        #viewer-container { 
-            width: 100%; 
-            height: 100%; 
-            overflow-y: auto; 
-            overflow-x: hidden;
-            position: relative; 
-            flex: 1; 
-            display: flex; 
-            flex-direction: column;
-            scroll-behavior: smooth;
-        }
-
-        #pdf-render-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            padding: 20px 0;
-        }
-
-        canvas {
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            max-width: 100%;
-            height: auto !important;
-        }
-
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--accent); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        #viewer-container { width: 100%; height: 100%; overflow: hidden; position: relative; flex: 1; }
+        #viewer iframe { width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body>
@@ -75,7 +47,6 @@
     <script>
         // REEMPLAZA ESTA URL CON TU WEB APP DE APPS SCRIPT
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzy25lfAqoKTKMXEnLS1whgbR3hLY6hDVYFMo16bnBFBIsSM9E0zTmvp0C_ZLNolnA1/exec"; 
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
     </script>
 
     <header class="card shadow-sm p-4 flex justify-between items-center sticky top-0 z-50">
@@ -93,7 +64,7 @@
 
     <main class="flex-grow flex flex-col items-center p-4 sm:p-8 w-full max-w-7xl mx-auto">
         
-        <!-- LOGIN / REGISTRO -->
+        <!-- AUTH -->
         <div id="view-auth" class="w-full max-w-md card rounded-2xl shadow-xl p-8 mt-10">
             <div class="flex border-b border-gray-200 mb-6 pb-2">
                 <button onclick="app.switchAuthTab('login')" id="tab-login" class="flex-1 text-center font-bold text-blue-600 border-b-2 border-blue-600 pb-2">Entrar</button>
@@ -112,7 +83,7 @@
             </form>
         </div>
 
-        <!-- BIBLIOTECA -->
+        <!-- LIBRARY -->
         <div id="view-library" class="hidden w-full">
             <div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
                 <h2 class="text-3xl font-light">Mi Biblioteca</h2>
@@ -125,33 +96,39 @@
             </div>
             <div id="library-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
             <div id="library-loader" class="hidden mt-10"><div class="loader"></div></div>
-            <div id="library-empty" class="hidden text-center mt-20 text-gray-500 opacity-70"><p>Tu biblioteca está vacía.</p></div>
         </div>
 
-        <!-- LECTOR DEFINITIVO -->
+        <!-- READER -->
         <div id="view-reader" class="hidden fixed inset-0 z-[100] bg-[var(--bg-color)] flex flex-col w-full h-full overflow-hidden">
             <div class="card shadow-sm p-3 border-b border-[var(--border-color)] flex justify-between items-center gap-4">
                 <button onclick="app.closeReader()" class="px-4 py-1 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition font-bold">
-                    <i class="fas fa-arrow-left mr-1"></i> Salir
+                    <i class="fas fa-arrow-left mr-1"></i> Volver
                 </button>
-                <h3 id="reader-title" class="font-bold truncate flex-1 text-center">Cargando...</h3>
+                <h3 id="reader-title" class="font-bold truncate flex-1 text-center">Libro</h3>
                 <div class="flex items-center gap-2">
                     <button onclick="app.toggleNotes()" class="p-2 text-blue-500 hover:bg-blue-100 rounded transition"><i class="fas fa-edit"></i></button>
                 </div>
             </div>
 
-            <div id="viewer-container">
-                <div id="viewer" class="w-full"></div>
-            </div>
-
-            <!-- Panel Notas Lateral -->
-            <div id="notes-panel" class="hidden w-80 bg-[var(--card-bg)] shadow-2xl p-4 flex flex-col h-full absolute right-0 top-0 z-[120] border-l border-[var(--border-color)]">
-                <div class="flex justify-between items-center mb-4">
-                    <h4 class="font-bold">Anotaciones</h4>
-                    <button onclick="app.toggleNotes()" class="text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
+            <div class="flex flex-1 w-full h-full overflow-hidden relative">
+                <div id="viewer-container">
+                    <div id="viewer" class="w-full h-full"></div>
                 </div>
-                <textarea id="book-notes" class="flex-1 w-full p-3 border rounded-xl resize-none bg-transparent outline-none focus:border-blue-500" placeholder="Escribe tus notas..."></textarea>
-                <button onclick="app.saveNotes()" class="w-full mt-4 bg-blue-600 text-white p-3 rounded-xl font-bold hover:bg-blue-700 transition">Guardar Notas</button>
+                <!-- Panel Notas Lateral -->
+                <div id="notes-panel" class="hidden w-80 bg-[var(--card-bg)] shadow-2xl p-4 flex flex-col h-full absolute right-0 top-0 z-[120] border-l border-[var(--border-color)]">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="font-bold">Anotaciones</h4>
+                        <button onclick="app.toggleNotes()"><i class="fas fa-times"></i></button>
+                    </div>
+                    <textarea id="book-notes" class="flex-1 w-full p-3 border rounded-xl resize-none bg-transparent outline-none focus:border-blue-500"></textarea>
+                    <button onclick="app.saveNotes()" class="w-full mt-4 bg-blue-600 text-white p-3 rounded-xl font-bold">Guardar</button>
+                </div>
+            </div>
+            
+            <div id="epub-controls" class="hidden p-3 border-t bg-[var(--card-bg)] flex justify-between items-center">
+                <button onclick="app.prevPage()" class="px-6 py-2 bg-gray-100 rounded-lg">Anterior</button>
+                <span id="epub-progress" class="font-bold">0%</span>
+                <button onclick="app.nextPage()" class="px-6 py-2 bg-gray-100 rounded-lg">Siguiente</button>
             </div>
         </div>
 
@@ -164,7 +141,6 @@
     <script>
         const app = {
             user: null, library: [], currentBook: null, rendition: null, bookObj: null,
-            pdfDoc: null, scrollTimeout: null,
 
             init() {
                 const savedUser = localStorage.getItem('duma_user');
@@ -215,26 +191,21 @@
                 document.getElementById('library-loader').classList.add('hidden');
                 if (res.status === 'success') {
                     this.library = res.data;
-                    if (this.library.length === 0) document.getElementById('library-empty').classList.remove('hidden');
-                    else {
-                        document.getElementById('library-empty').classList.add('hidden');
-                        this.library.forEach(book => {
-                            grid.innerHTML += `
-                                <div class="card rounded-2xl p-5 shadow-sm hover:shadow-lg transition flex flex-col relative group">
-                                    <button onclick="app.deleteBook('${book.id}')" class="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100 p-2"><i class="fas fa-trash"></i></button>
-                                    <div class="text-5xl text-center my-6"><i class="fas ${book.type==='pdf'?'fa-file-pdf text-red-500':'fa-book text-green-500'}"></i></div>
-                                    <h4 class="font-bold truncate text-center">${book.title}</h4>
-                                    <p class="text-[10px] text-center text-blue-500 font-bold mb-4">${book.progress && book.progress != "0" ? 'AVANCE GUARDADO' : 'NUEVO'}</p>
-                                    <button onclick="app.openBook('${book.id}')" class="mt-auto w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition">Leer Libro</button>
-                                </div>`;
-                        });
-                    }
+                    this.library.forEach(book => {
+                        grid.innerHTML += `
+                            <div class="card rounded-2xl p-5 shadow-sm hover:shadow-lg transition flex flex-col relative group">
+                                <button onclick="app.deleteBook('${book.id}')" class="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100 p-2"><i class="fas fa-trash"></i></button>
+                                <div class="text-5xl text-center my-6"><i class="fas ${book.type==='pdf'?'fa-file-pdf text-red-500':'fa-book text-green-500'}"></i></div>
+                                <h4 class="font-bold truncate text-center">${book.title}</h4>
+                                <p class="text-[10px] text-center text-blue-500 font-bold mb-4">${book.progress && book.progress != "0" ? 'PROGRESO GUARDADO' : 'NUEVO'}</p>
+                                <button onclick="app.openBook('${book.id}')" class="mt-auto w-full bg-blue-600 text-white font-bold py-3 rounded-xl">Leer Libro</button>
+                            </div>`;
+                    });
                 }
             },
 
             async openBook(bookId) {
-                // Sincronización extrema: pedimos el avance real antes de abrir
-                const res = await this.apiCall({ action: 'getLibrary', userId: this.user.id }, "Sincronizando avance...");
+                const res = await this.apiCall({ action: 'getLibrary', userId: this.user.id }, "Cargando posición...");
                 this.currentBook = res.data.find(b => b.id === bookId);
                 
                 document.getElementById('reader-title').textContent = this.currentBook.title;
@@ -242,120 +213,73 @@
                 this.showView('reader');
                 
                 const viewer = document.getElementById('viewer');
-                viewer.innerHTML = '<div class="loader mt-20"></div>';
+                viewer.innerHTML = '';
+                document.getElementById('epub-controls').classList.add('hidden');
 
                 if (this.currentBook.type === 'epub') {
                     this.renderEpub();
                 } else {
-                    this.renderPdf();
-                }
-            },
-
-            async renderPdf() {
-                const viewer = document.getElementById('viewer');
-                viewer.innerHTML = '<div id="pdf-render-container"></div>';
-                const container = document.getElementById('pdf-render-container');
-
-                try {
-                    const loadingTask = pdfjsLib.getDocument(this.currentBook.url);
-                    this.pdfDoc = await loadingTask.promise;
-                    
-                    for (let i = 1; i <= this.pdfDoc.numPages; i++) {
-                        const page = await this.pdfDoc.getPage(i);
-                        const canvas = document.createElement('canvas');
-                        canvas.id = `pdf-page-${i}`;
-                        container.appendChild(canvas);
-
-                        const viewport = page.getViewport({ scale: 1.5 });
-                        const context = canvas.getContext('2d');
-                        canvas.height = viewport.height;
-                        canvas.width = viewport.width;
-
-                        await page.render({ canvasContext: context, viewport: viewport }).promise;
+                    // USO DE VISOR NATIVO PARA EVITAR CORS
+                    let driveUrl = this.currentBook.url;
+                    if (driveUrl.includes('drive.google.com')) {
+                        const fileId = driveUrl.match(/[-\w]{25,}/);
+                        driveUrl = `https://drive.google.com/file/d/${fileId}/preview`;
                     }
-
-                    // RESTAURAR POSICIÓN PDF
-                    if (this.currentBook.progress && !isNaN(this.currentBook.progress)) {
-                        setTimeout(() => {
-                            const targetPage = document.getElementById(`pdf-page-${this.currentBook.progress}`);
-                            if (targetPage) targetPage.scrollIntoView();
-                        }, 500);
-                    }
-
-                    // ESCUCHAR SCROLL PARA GUARDAR PROGRESO
-                    document.getElementById('viewer-container').onscroll = () => {
-                        clearTimeout(this.scrollTimeout);
-                        this.scrollTimeout = setTimeout(() => {
-                            this.calculatePdfProgress();
-                        }, 1000);
-                    };
-
-                } catch (e) {
-                    viewer.innerHTML = '<p class="text-center p-10">Error al cargar PDF. Verifica el enlace.</p>';
-                }
-            },
-
-            calculatePdfProgress() {
-                const container = document.getElementById('viewer-container');
-                const pages = document.querySelectorAll('canvas');
-                let currentPage = 1;
-                
-                pages.forEach((page, index) => {
-                    const rect = page.getBoundingClientRect();
-                    if (rect.top < window.innerHeight / 2 && rect.bottom > window.innerHeight / 2) {
-                        currentPage = index + 1;
-                    }
-                });
-
-                if (this.currentBook.progress != currentPage) {
-                    this.currentBook.progress = currentPage;
-                    this.apiCall({ action: 'updateProgress', userId: this.user.id, bookId: this.currentBook.id, progress: currentPage }, null, true);
+                    viewer.innerHTML = `<iframe src="${driveUrl}" class="w-full h-full" allow="autoplay"></iframe>`;
+                    // Guardar que se está leyendo para sincronizar entre dispositivos
+                    this.apiCall({ action: 'updateProgress', userId: this.user.id, bookId: this.currentBook.id, progress: "LECTURA_ACTIVA" }, null, true);
                 }
             },
 
             renderEpub() {
+                document.getElementById('epub-controls').classList.remove('hidden');
                 this.bookObj = ePub(this.currentBook.url);
                 this.rendition = this.bookObj.renderTo("viewer", { width: "100%", height: "100%", flow: "paginated" });
                 
                 this.bookObj.ready.then(() => {
-                    const savedPos = (this.currentBook.progress && this.currentBook.progress !== "0") ? this.currentBook.progress : undefined;
-                    return this.rendition.display(savedPos);
+                    const savedPos = (this.currentBook.progress && this.currentBook.progress !== "0" && this.currentBook.progress !== "LECTURA_ACTIVA") ? this.currentBook.progress : undefined;
+                    this.rendition.display(savedPos);
                 });
 
                 this.rendition.on("relocated", (loc) => {
                     const cfi = loc.start.cfi;
-                    if (this.currentBook.progress !== cfi) {
-                        this.currentBook.progress = cfi;
-                        this.apiCall({ action: 'updateProgress', userId: this.user.id, bookId: this.currentBook.id, progress: cfi }, null, true);
-                    }
+                    document.getElementById('epub-progress').textContent = Math.round(loc.start.percentage * 100) + "%";
+                    this.apiCall({ action: 'updateProgress', userId: this.user.id, bookId: this.currentBook.id, progress: cfi }, null, true);
                 });
             },
+
+            nextPage() { if(this.rendition) this.rendition.next(); },
+            prevPage() { if(this.rendition) this.rendition.prev(); },
 
             closeReader() {
                 if (this.bookObj) this.bookObj.destroy();
-                this.pdfDoc = null;
-                document.getElementById('viewer-container').onscroll = null;
                 this.loadLibrary();
             },
 
-            async saveNotes() {
-                const notes = document.getElementById('book-notes').value;
-                await this.apiCall({ action: 'updateProgress', userId: this.user.id, bookId: this.currentBook.id, notes: notes }, "Guardando...");
-                this.currentBook.notes = notes;
-                Swal.fire({ title: 'Notas guardadas', icon: 'success', timer: 1000, showConfirmButton: false });
+            async uploadFile(e) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = async (ev) => {
+                    const base64 = ev.target.result.split(',')[1];
+                    await this.apiCall({ action: 'uploadBook', userId: this.user.id, filename: file.name, mimeType: file.type, base64: base64, title: file.name.split('.')[0] }, "Subiendo...");
+                    this.loadLibrary();
+                };
+                reader.readAsDataURL(file);
+            },
+
+            async deleteBook(id) {
+                const res = await this.apiCall({ action: 'deleteBook', userId: this.user.id, bookId: id }, "Borrando...");
+                this.loadLibrary();
             },
 
             toggleNotes() { document.getElementById('notes-panel').classList.toggle('hidden'); },
+            async saveNotes() {
+                const notes = document.getElementById('book-notes').value;
+                await this.apiCall({ action: 'updateProgress', userId: this.user.id, bookId: this.currentBook.id, notes: notes }, "Guardando...");
+                Swal.fire({ title: 'Notas guardadas', icon: 'success', timer: 1000, showConfirmButton: false });
+            },
             logout() { localStorage.clear(); location.reload(); },
-            
-            showSettings() {
-                Swal.fire({
-                    title: 'Ajustes de Sincronización',
-                    html: `<p class="text-xs text-left">Tu progreso se guarda automáticamente en la nube cada vez que cambias de página.</p>
-                           <button onclick="location.reload()" class="mt-4 w-full bg-blue-100 text-blue-700 p-2 rounded">Refrescar App</button>`,
-                    showConfirmButton: false
-                });
-            }
+            showSettings() { Swal.fire({ title: 'Ajustes', text: `Usuario: ${this.user.username}`, icon: 'info' }); }
         };
 
         document.addEventListener('DOMContentLoaded', () => app.init());
