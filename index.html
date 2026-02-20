@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ReaderPro Cloud</title>
+    <title>ReaderPro Cloud | Andres Urrea</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root { --p: #6366f1; --bg: #0f172a; --c: #1e293b; --t: #f8fafc; --acc: #22c55e; }
@@ -18,9 +19,9 @@
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; margin-top: 20px; }
         .book { background: var(--c); padding: 15px; border-radius: 10px; border: 1px solid var(--p); text-align: center; }
         
-        /* Estilos del Visor */
-        #viewer-container { width: 100%; height: 90vh; background: #1e293b; margin-top: 20px; display: none; border-radius: 10px; position: relative; border: 2px solid var(--p); }
-        iframe { width: 100%; height: 100%; border: none; background: white; border-radius: 8px; }
+        /* NUEVO VISOR DIRECTO */
+        #viewer-container { width: 100%; height: 90vh; background: #1e293b; margin-top: 20px; display: none; border-radius: 10px; position: relative; border: 2px solid var(--p); overflow-y: auto; }
+        canvas { display: block; margin: 20px auto; box-shadow: 0 0 20px rgba(0,0,0,0.5); max-width: 100%; }
         
         .loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
     </style>
@@ -29,20 +30,18 @@
 
 <div id="loader" class="loader">
     <div style="font-size: 2rem; margin-bottom: 10px;">⚙️</div>
-    <p id="loader-text">Conectando con Google Drive...</p>
+    <p id="loader-text">Procesando...</p>
 </div>
 
 <div id="login-screen">
     <div class="card" style="width: 320px;">
-        <h2 id="auth-title" style="text-align: center;">📚 ReaderPro</h2>
+        <h2 style="text-align: center;">📚 ReaderPro</h2>
         <input type="text" id="user" placeholder="Usuario">
         <input type="password" id="pass" placeholder="Contraseña">
-        
         <div id="login-box">
             <button onclick="auth('login')">Entrar</button>
             <p style="text-align:center; cursor:pointer; color:var(--p); font-size: 0.8rem;" onclick="toggleAuth(true)">¿Nuevo? Regístrate</p>
         </div>
-        
         <div id="register-box" style="display:none">
             <button onclick="auth('register')" style="background:var(--acc)">Crear Cuenta</button>
             <p style="text-align:center; cursor:pointer; color:var(--p); font-size: 0.8rem;" onclick="toggleAuth(false)">Ya tengo cuenta</p>
@@ -57,19 +56,17 @@
     </header>
 
     <div class="card" style="margin-top: 20px;">
-        <input type="text" id="link-url" placeholder="Pega link de PDF o Drive...">
         <div style="display:flex; gap:10px;">
-            <button onclick="document.getElementById('file-in').click()" style="background:#475569">📁 Subir Archivo</button>
-            <button onclick="upload('link')">🔗 Usar Enlace</button>
+            <button onclick="document.getElementById('file-in').click()" style="background:#475569">📁 Subir PDF desde PC</button>
         </div>
-        <input type="file" id="file-in" style="display:none">
+        <input type="file" id="file-in" style="display:none" accept=".pdf">
     </div>
 
     <div id="library" class="grid"></div>
     
     <div id="viewer-container">
-        <button onclick="document.getElementById('viewer-container').style.display='none'" style="position:absolute; top:-15px; right:-15px; width:30px; height:30px; border-radius:50%; background:red; color:white; border:none; cursor:pointer; z-index:100;">X</button>
-        <div id="iframe-box" style="width:100%; height:100%;"></div>
+        <button onclick="document.getElementById('viewer-container').style.display='none'" style="position:fixed; top:20px; right:40px; padding: 10px 20px; background:red; color:white; border:none; cursor:pointer; z-index:100; border-radius: 5px;">CERRAR LECTURA</button>
+        <div id="pdf-render-area"></div>
     </div>
 </div>
 
@@ -78,7 +75,6 @@
     let currentUser = "";
 
     function toggleAuth(isReg) {
-        document.getElementById('auth-title').innerText = isReg ? "Registro" : "ReaderPro";
         document.getElementById('login-box').style.display = isReg ? "none" : "block";
         document.getElementById('register-box').style.display = isReg ? "block" : "none";
     }
@@ -87,16 +83,15 @@
         const user = document.getElementById('user').value;
         const pass = document.getElementById('pass').value;
         if(!user || !pass) return alert("Completa los campos");
-
         toggleLoader(true, "Verificando...");
         try {
             const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action, user, pass }) });
             const out = await res.json();
-            if(out.success) {
+            if(out.success) { 
                 if(action === 'register') { alert("¡Cuenta creada!"); toggleAuth(false); }
                 else { currentUser = user; showApp(); }
-            } else { alert("Error: Usuario o clave incorrectos."); }
-        } catch(e) { alert("Error de conexión"); }
+            } else { alert("Error de acceso."); }
+        } catch(e) { alert("Error de red."); }
         toggleLoader(false);
     }
 
@@ -106,29 +101,15 @@
         loadBooks();
     }
 
-    async function upload(mode) {
-        let payload = { action: 'upload', user: currentUser };
-        if(mode === 'link') {
-            const url = document.getElementById('link-url').value;
-            if(!url) return;
-            payload.name = "Enlace Externo"; payload.url = url; payload.type = "pdf";
-        }
-        toggleLoader(true, "Guardando...");
-        await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
-        toggleLoader(false);
-        loadBooks();
-    }
-
     document.getElementById('file-in').onchange = function(e) {
         const file = e.target.files[0];
         const reader = new FileReader();
         reader.onload = async function() {
-            toggleLoader(true, "Subiendo a Drive...");
+            toggleLoader(true, "Subiendo PDF a tu nube...");
             const base64 = reader.result.split(',')[1];
             await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({
                 action: 'upload', user: currentUser, name: file.name,
-                type: file.name.endsWith('.epub') ? 'epub' : 'pdf',
-                fileData: base64, mimeType: file.type
+                type: 'pdf', fileData: base64, mimeType: file.type
             })});
             toggleLoader(false);
             loadBooks();
@@ -145,33 +126,48 @@
             if(row[5] === currentUser) {
                 const div = document.createElement('div');
                 div.className = 'book';
-                div.innerHTML = `<h4 style="font-size:0.8rem; margin:0 0 10px 0;">${row[1]}</h4><button onclick="openViewer('${row[3]}')">Leer</button>`;
+                // Usamos el ID de Drive para la descarga directa
+                const driveId = row[6] || (row[3].match(/[-\w]{25,}/) || [])[0];
+                div.innerHTML = `<h4 style="font-size:0.8rem;">${row[1]}</h4><button onclick="viewPDF('${driveId}')">Leer Ahora</button>`;
                 lib.appendChild(div);
             }
         });
     }
 
-    // --- FUNCIÓN DE VISUALIZACIÓN CORREGIDA ---
-    function openViewer(url) {
+    // --- LA SOLUCIÓN DEFINITIVA: RENDERIZADO PROPIO ---
+    async function viewPDF(driveId) {
+        if(!driveId) return alert("ID de archivo no encontrado.");
+        toggleLoader(true, "Descargando y renderizando...");
+        
         const container = document.getElementById('viewer-container');
-        const box = document.getElementById('iframe-box');
+        const renderArea = document.getElementById('pdf-render-area');
+        renderArea.innerHTML = ""; 
         container.style.display = 'block';
-        
-        let finalUrl = "";
 
-        if (url.includes('drive.google.com')) {
-            // Extraer ID de Drive
-            const idMatch = url.match(/[-\w]{25,}/);
-            const driveId = idMatch ? idMatch[0] : "";
-            // Usar el visor de Google Docs para evitar bloqueos de frame
-            finalUrl = `https://docs.google.com/viewer?srcid=${driveId}&pid=explorer&efh=false&a=v&chrome=false&embedded=true`;
-        } else {
-            // Para enlaces externos genéricos
-            finalUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+        // URL de descarga directa de Google Drive
+        const url = `https://drive.google.com/uc?export=download&id=${driveId}`;
+
+        try {
+            const loadingTask = pdfjsLib.getDocument(url);
+            const pdf = await loadingTask.promise;
+            
+            for(let num = 1; num <= pdf.numPages; num++) {
+                const page = await pdf.getPage(num);
+                const viewport = page.getViewport({scale: 1.5});
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                await page.render({canvasContext: context, viewport: viewport}).promise;
+                renderArea.appendChild(canvas);
+            }
+            container.scrollIntoView({ behavior: 'smooth' });
+        } catch (e) {
+            console.error(e);
+            alert("Error al cargar el PDF. Asegúrate de que el archivo en Drive sea público (Cualquier persona con el enlace).");
         }
-        
-        box.innerHTML = `<iframe src="${finalUrl}" allow="autoplay"></iframe>`;
-        container.scrollIntoView({ behavior: 'smooth' });
+        toggleLoader(false);
     }
 
     function toggleLoader(show, text = "") {
