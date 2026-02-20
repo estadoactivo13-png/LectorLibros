@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dumareader</title>
+    <title>Dumareader - Premium E-Reader</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -31,21 +31,31 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            overflow-x: hidden;
         }
 
         .card { background-color: var(--card-bg); border: 1px solid var(--border-color); }
         .hidden { display: none !important; }
+        
+        /* Loader Premium */
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--accent); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        #viewer-container { width: 100%; height: 100%; overflow: hidden; position: relative; flex: 1; }
+        /* Contenedor del Lector */
+        #viewer-container { width: 100%; height: 100%; overflow: hidden; position: relative; flex: 1; display: flex; flex-direction: column; }
+        #viewer { width: 100%; height: 100%; flex: 1; }
         #viewer iframe { width: 100%; height: 100%; border: none; }
+
+        /* Scrollbar personalizada */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
     </style>
 </head>
 <body>
 
     <script>
-        // REEMPLAZA ESTA URL CON TU WEB APP DE APPS SCRIPT
+        // CONFIGURACIÓN OBLIGATORIA
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzy25lfAqoKTKMXEnLS1whgbR3hLY6hDVYFMo16bnBFBIsSM9E0zTmvp0C_ZLNolnA1/exec"; 
     </script>
 
@@ -54,14 +64,17 @@
             <i class="fas fa-book-open mr-2"></i>Dumareader
         </h1>
         <div id="user-menu" class="hidden flex items-center gap-4">
-            <span id="user-greeting" class="font-medium hidden sm:inline"></span>
+            <span id="user-greeting" class="font-medium hidden sm:inline text-sm"></span>
+            <button onclick="app.showSettings()" class="text-gray-500 hover:text-blue-600 transition p-2" title="Ajustes">
+                <i class="fas fa-cog fa-lg"></i>
+            </button>
             <button onclick="app.logout()" class="text-red-500 hover:text-red-700 text-sm font-bold transition">Salir</button>
         </div>
     </header>
 
     <main class="flex-grow flex flex-col items-center p-4 sm:p-8 w-full max-w-7xl mx-auto">
         
-        <!-- AUTH -->
+        <!-- PANTALLA DE AUTENTICACIÓN -->
         <div id="view-auth" class="w-full max-w-md card rounded-2xl shadow-xl p-8 mt-10">
             <div class="flex border-b border-gray-200 mb-6 pb-2">
                 <button onclick="app.switchAuthTab('login')" id="tab-login" class="flex-1 text-center font-bold text-blue-600 border-b-2 border-blue-600 pb-2">Entrar</button>
@@ -70,71 +83,77 @@
             <form id="form-login" onsubmit="app.handleLogin(event)">
                 <div class="mb-4"><label class="block text-sm font-medium mb-1">Usuario</label><input type="text" id="login-user" required class="w-full p-3 border rounded-lg bg-transparent"></div>
                 <div class="mb-6"><label class="block text-sm font-medium mb-1">Contraseña</label><input type="password" id="login-pass" required class="w-full p-3 border rounded-lg bg-transparent"></div>
-                <button type="submit" class="w-full bg-blue-600 text-white font-bold p-3 rounded-lg hover:bg-blue-700">Iniciar Sesión</button>
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold p-3 rounded-lg hover:bg-blue-700 transition">Iniciar Sesión</button>
                 <div class="mt-4 text-center"><button type="button" onclick="app.switchAuthTab('recover')" class="text-sm text-blue-500 hover:underline">¿Olvidaste tu contraseña?</button></div>
             </form>
             <form id="form-register" class="hidden" onsubmit="app.handleRegister(event)">
-                <div class="mb-4"><label class="block text-sm font-medium mb-1">Correo</label><input type="email" id="reg-email" required class="w-full p-3 border rounded-lg bg-transparent"></div>
-                <div class="mb-4"><label class="block text-sm font-medium mb-1">Usuario</label><input type="text" id="reg-user" required class="w-full p-3 border rounded-lg bg-transparent"></div>
+                <div class="mb-4"><label class="block text-sm font-medium mb-1">Correo Electrónico</label><input type="email" id="reg-email" required class="w-full p-3 border rounded-lg bg-transparent"></div>
+                <div class="mb-4"><label class="block text-sm font-medium mb-1">Nombre de Usuario</label><input type="text" id="reg-user" required class="w-full p-3 border rounded-lg bg-transparent"></div>
                 <div class="mb-6"><label class="block text-sm font-medium mb-1">Contraseña</label><input type="password" id="reg-pass" required class="w-full p-3 border rounded-lg bg-transparent"></div>
-                <button type="submit" class="w-full bg-green-600 text-white font-bold p-3 rounded-lg hover:bg-green-700">Crear Cuenta</button>
+                <button type="submit" class="w-full bg-green-600 text-white font-bold p-3 rounded-lg hover:bg-green-700 transition">Crear Cuenta</button>
             </form>
             <form id="form-recover" class="hidden" onsubmit="app.handleRecover(event)">
-                <div class="mb-6"><label class="block text-sm font-medium mb-1">Correo</label><input type="email" id="rec-email" required class="w-full p-3 border rounded-lg bg-transparent"></div>
-                <button type="submit" class="w-full bg-gray-800 text-white font-bold p-3 rounded-lg">Recuperar Datos</button>
+                <p class="text-sm text-gray-500 mb-4 text-center">Te enviaremos tus credenciales al correo registrado.</p>
+                <div class="mb-6"><label class="block text-sm font-medium mb-1">Correo Electrónico</label><input type="email" id="rec-email" required class="w-full p-3 border rounded-lg bg-transparent"></div>
+                <button type="submit" class="w-full bg-gray-800 text-white font-bold p-3 rounded-lg transition">Recuperar Datos</button>
             </form>
         </div>
 
-        <!-- LIBRARY -->
+        <!-- PANTALLA DE BIBLIOTECA -->
         <div id="view-library" class="hidden w-full">
             <div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
                 <h2 class="text-3xl font-light">Mi Biblioteca</h2>
                 <div class="flex gap-2">
-                    <label class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg cursor-pointer flex items-center gap-2">
-                        <i class="fas fa-upload"></i> Subir Libro
+                    <label class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg cursor-pointer flex items-center gap-2 transition">
+                        <i class="fas fa-upload"></i> Subir PDF/EPUB
                         <input type="file" id="file-upload" accept=".pdf,.epub" class="hidden" onchange="app.uploadFile(event)">
                     </label>
-                    <button onclick="app.addUrlPrompt()" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg flex items-center gap-2"><i class="fas fa-link"></i> Enlace</button>
+                    <button onclick="app.addUrlPrompt()" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg flex items-center gap-2 transition"><i class="fas fa-link"></i> Enlace Externo</button>
                 </div>
             </div>
             <div id="library-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
             <div id="library-loader" class="hidden mt-10"><div class="loader"></div></div>
-            <div id="library-empty" class="hidden text-center mt-20 text-gray-500 opacity-70"><p>Tu biblioteca está vacía.</p></div>
+            <div id="library-empty" class="hidden text-center mt-20 text-gray-500 opacity-70"><p>Tu biblioteca está vacía. Sube un libro para comenzar.</p></div>
         </div>
 
-        <!-- READER (FULL SCREEN OVERLAY) -->
+        <!-- LECTOR (OVERLAY TOTAL) -->
         <div id="view-reader" class="hidden fixed inset-0 z-[100] bg-[var(--bg-color)] flex flex-col w-full h-full overflow-hidden">
+            <!-- Header Lector -->
             <div class="card shadow-sm p-3 border-b border-[var(--border-color)] flex justify-between items-center gap-4">
-                <button onclick="app.loadLibrary()" class="px-3 py-1 bg-gray-200 text-gray-800 rounded hover:bg-gray-300">
-                    <i class="fas fa-arrow-left"></i> Volver
+                <button onclick="app.loadLibrary()" class="px-4 py-1 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition font-bold">
+                    <i class="fas fa-arrow-left mr-1"></i> Salir
                 </button>
-                <h3 id="reader-title" class="font-bold truncate flex-1 text-center">Libro</h3>
+                <h3 id="reader-title" class="font-bold truncate flex-1 text-center text-sm md:text-base">Cargando...</h3>
                 <div class="flex items-center gap-2">
-                    <button onclick="app.setTheme('light')" class="w-7 h-7 rounded-full bg-white border border-gray-300 text-black flex items-center justify-center text-xs"><i class="fas fa-sun"></i></button>
-                    <button onclick="app.setTheme('sepia')" class="w-7 h-7 rounded-full bg-[#f4ecd8] border border-gray-400 text-[#5b4636] flex items-center justify-center text-xs"><i class="fas fa-coffee"></i></button>
-                    <button onclick="app.setTheme('dark')" class="w-7 h-7 rounded-full bg-gray-800 border border-gray-600 text-white flex items-center justify-center text-xs"><i class="fas fa-moon"></i></button>
+                    <button onclick="app.setTheme('light')" class="w-8 h-8 rounded-full bg-white border border-gray-300 flex items-center justify-center text-xs"><i class="fas fa-sun text-yellow-500"></i></button>
+                    <button onclick="app.setTheme('sepia')" class="w-8 h-8 rounded-full bg-[#f4ecd8] border border-gray-400 text-[#5b4636] flex items-center justify-center text-xs"><i class="fas fa-coffee"></i></button>
+                    <button onclick="app.setTheme('dark')" class="w-8 h-8 rounded-full bg-gray-800 border border-gray-600 text-white flex items-center justify-center text-xs"><i class="fas fa-moon"></i></button>
                     <div class="w-px h-6 bg-gray-300 mx-1"></div>
-                    <button onclick="app.changeFontSize(1)" class="p-2 hover:bg-gray-200 rounded"><i class="fas fa-plus"></i></button>
-                    <button onclick="app.changeFontSize(-1)" class="p-2 hover:bg-gray-200 rounded"><i class="fas fa-minus"></i></button>
-                    <button onclick="app.toggleNotes()" class="p-2 text-blue-500 hover:bg-blue-100 rounded"><i class="fas fa-edit"></i></button>
+                    <button onclick="app.toggleNotes()" class="p-2 text-blue-500 hover:bg-blue-100 rounded transition" title="Notas"><i class="fas fa-edit"></i></button>
                 </div>
             </div>
 
+            <!-- Contenedor Principal Lector -->
             <div class="flex flex-1 w-full h-full overflow-hidden relative">
-                <div class="flex-1 relative flex flex-col w-full h-full bg-white">
-                    <div id="viewer-container">
-                        <div id="viewer" class="w-full h-full"></div>
-                    </div>
-                    <div id="epub-controls" class="hidden p-2 flex justify-between items-center border-t border-[var(--border-color)] bg-[var(--card-bg)]">
-                        <button onclick="app.prevPage()" class="px-4 py-2 hover:bg-gray-200 rounded">Anterior</button>
-                        <span id="epub-progress" class="text-xs font-mono opacity-60"></span>
-                        <button onclick="app.nextPage()" class="px-4 py-2 hover:bg-gray-200 rounded">Siguiente</button>
-                    </div>
+                <div id="viewer-container" class="bg-white flex-1 h-full">
+                    <div id="viewer" class="w-full h-full"></div>
                 </div>
-                <div id="notes-panel" class="hidden w-80 bg-[var(--card-bg)] shadow-lg p-4 flex flex-col h-full absolute right-0 top-0 z-10 border-l border-[var(--border-color)]">
-                    <h4 class="font-bold mb-3 flex justify-between">Notas <button onclick="app.toggleNotes()">&times;</button></h4>
-                    <textarea id="book-notes" class="flex-1 w-full p-3 border rounded resize-none bg-transparent outline-none focus:border-blue-500"></textarea>
-                    <button onclick="app.saveNotes()" class="w-full mt-3 bg-blue-600 text-white p-2 rounded">Guardar Notas</button>
+
+                <!-- Controles EPUB -->
+                <div id="epub-controls" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-6 bg-black/80 text-white px-6 py-3 rounded-full shadow-2xl z-[110]">
+                    <button onclick="app.prevPage()" class="hover:text-blue-400"><i class="fas fa-chevron-left fa-lg"></i></button>
+                    <span id="epub-progress-display" class="text-xs font-mono min-w-[60px] text-center">0%</span>
+                    <button onclick="app.nextPage()" class="hover:text-blue-400"><i class="fas fa-chevron-right fa-lg"></i></button>
+                </div>
+
+                <!-- Panel Notas Lateral -->
+                <div id="notes-panel" class="hidden w-80 bg-[var(--card-bg)] shadow-2xl p-4 flex flex-col h-full absolute right-0 top-0 z-[120] border-l border-[var(--border-color)]">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="font-bold">Anotaciones</h4>
+                        <button onclick="app.toggleNotes()" class="text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
+                    </div>
+                    <textarea id="book-notes" class="flex-1 w-full p-3 border rounded-xl resize-none bg-transparent outline-none focus:border-blue-500 text-sm" placeholder="Escribe aquí..."></textarea>
+                    <button onclick="app.saveNotes()" class="w-full mt-4 bg-blue-600 text-white p-3 rounded-xl font-bold hover:bg-blue-700 transition">Guardar Notas</button>
                 </div>
             </div>
         </div>
@@ -142,17 +161,22 @@
     </main>
 
     <footer class="p-6 text-center text-sm opacity-70 mt-auto border-t border-gray-200 card">
-        <p>Creado por <strong>Andrés Urrea</strong> | WhatsApp: <a href="https://wa.me/56930763222" target="_blank">+56 9 3076 3222</a></p>
+        <p><strong>Dumareader Premium</strong> | Soporte: <a href="https://wa.me/56930763222" target="_blank" class="text-blue-600 font-bold underline">+56 9 3076 3222</a></p>
     </footer>
 
     <script>
         const app = {
-            user: null, library: [], currentBook: null, rendition: null, bookObj: null, fontSize: 100,
+            user: null, library: [], currentBook: null, rendition: null, bookObj: null, 
+            fontSize: 100, pdfSaveTimer: null,
 
             init() {
                 const savedUser = localStorage.getItem('duma_user');
-                if (savedUser) { this.user = JSON.parse(savedUser); this.loadLibrary(); } 
-                else { this.showView('auth'); }
+                if (savedUser) { 
+                    this.user = JSON.parse(savedUser); 
+                    this.loadLibrary(); 
+                } else { 
+                    this.showView('auth'); 
+                }
                 this.setTheme(localStorage.getItem('duma_theme') || 'light');
             },
 
@@ -163,17 +187,20 @@
                 if(viewId === 'library' && this.user) document.getElementById('user-greeting').textContent = `Hola, ${this.user.username}`;
             },
 
-            async apiCall(data, loadingMsg) {
-                if (loadingMsg) Swal.fire({ title: loadingMsg, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            async apiCall(data, loadingMsg, isSilent = false) {
+                if (loadingMsg && !isSilent) Swal.fire({ title: loadingMsg, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                
                 const formData = new URLSearchParams();
                 for (const key in data) formData.append(key, data[key]);
+
                 try {
                     const response = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: formData });
                     const result = await response.json();
-                    if (loadingMsg) Swal.close();
+                    if (loadingMsg && !isSilent) Swal.close();
                     return result;
                 } catch (e) {
-                    if (loadingMsg) { Swal.close(); Swal.fire('Error', 'No se pudo conectar.', 'error'); }
+                    if (loadingMsg && !isSilent) { Swal.close(); Swal.fire('Error', 'No se pudo sincronizar.', 'error'); }
+                    console.warn("Silent sync failed, will retry later.");
                     return { status: 'error' };
                 }
             },
@@ -181,53 +208,78 @@
             switchAuthTab(tab) {
                 ['login', 'register', 'recover'].forEach(t => document.getElementById(`form-${t}`).classList.add('hidden'));
                 document.getElementById(`form-${tab}`).classList.remove('hidden');
+                ['tab-login', 'tab-register'].forEach(id => {
+                    const btn = document.getElementById(id);
+                    btn.classList.toggle('text-blue-600', id === `tab-${tab}`);
+                    btn.classList.toggle('border-b-2', id === `tab-${tab}`);
+                });
             },
 
             async handleLogin(e) {
                 e.preventDefault();
-                const res = await this.apiCall({ action: 'login', username: loginUser.value, password: loginPass.value }, "Entrando...");
-                if (res.status === 'success') { this.user = { id: res.userId, username: loginUser.value }; localStorage.setItem('duma_user', JSON.stringify(this.user)); this.loadLibrary(); }
-                else Swal.fire('Error', res.message, 'error');
+                const res = await this.apiCall({ 
+                    action: 'login', 
+                    username: document.getElementById('login-user').value, 
+                    password: document.getElementById('login-pass').value 
+                }, "Verificando...");
+                
+                if (res.status === 'success') { 
+                    this.user = { id: res.userId, username: res.username }; 
+                    localStorage.setItem('duma_user', JSON.stringify(this.user)); 
+                    this.loadLibrary(); 
+                } else Swal.fire('Error', res.message, 'error');
             },
 
             async handleRegister(e) {
                 e.preventDefault();
-                const res = await this.apiCall({ action: 'register', email: regEmail.value, username: regUser.value, password: regPass.value }, "Registrando...");
-                if (res.status === 'success') { this.user = { id: res.userId, username: regUser.value }; localStorage.setItem('duma_user', JSON.stringify(this.user)); this.loadLibrary(); }
-                else Swal.fire('Error', res.message, 'error');
+                const res = await this.apiCall({ 
+                    action: 'register', 
+                    email: document.getElementById('reg-email').value, 
+                    username: document.getElementById('reg-user').value, 
+                    password: document.getElementById('reg-pass').value 
+                }, "Creando cuenta...");
+                
+                if (res.status === 'success') { 
+                    this.user = { id: res.userId, username: res.username }; 
+                    localStorage.setItem('duma_user', JSON.stringify(this.user)); 
+                    this.loadLibrary(); 
+                } else Swal.fire('Error', res.message, 'error');
             },
 
             logout() { localStorage.removeItem('duma_user'); location.reload(); },
 
             async loadLibrary() {
                 this.showView('library');
-                document.getElementById('library-loader').classList.remove('hidden');
+                const grid = document.getElementById('library-grid');
+                const loader = document.getElementById('library-loader');
+                const empty = document.getElementById('library-empty');
+                
+                grid.innerHTML = '';
+                loader.classList.remove('hidden');
+                empty.classList.add('hidden');
+                
                 const res = await this.apiCall({ action: 'getLibrary', userId: this.user.id });
-                document.getElementById('library-loader').classList.add('hidden');
+                loader.classList.add('hidden');
+                
                 if (res.status === 'success') {
                     this.library = res.data;
-                    const grid = document.getElementById('library-grid');
-                    grid.innerHTML = '';
-                    if (this.library.length === 0) document.getElementById('library-empty').classList.remove('hidden');
+                    if (this.library.length === 0) empty.classList.remove('hidden');
                     else {
                         this.library.forEach(book => {
+                            const icon = book.type === 'pdf' ? 'fa-file-pdf text-red-500' : (book.type === 'epub' ? 'fa-book text-green-500' : 'fa-link text-blue-500');
                             grid.innerHTML += `
-                                <div class="card rounded-xl p-5 shadow-sm hover:shadow-md transition flex flex-col relative group">
-                                    <button onclick="app.deleteBook('${book.id}')" class="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100 p-2"><i class="fas fa-trash"></i></button>
-                                    <div class="text-4xl text-center mb-4"><i class="fas ${book.type==='pdf'?'fa-file-pdf text-red-500':book.type==='epub'?'fa-book text-green-500':'fa-link text-blue-500'}"></i></div>
-                                    <h4 class="font-bold truncate">${book.title}</h4>
-                                    <p class="text-xs opacity-50 mb-4">${book.type.toUpperCase()}</p>
-                                    <button onclick="app.openBook('${book.id}')" class="mt-auto w-full bg-blue-600 text-white py-2 rounded">Leer</button>
+                                <div class="card rounded-2xl p-5 shadow-sm hover:shadow-lg transition-all flex flex-col relative group overflow-hidden border-b-4 border-b-transparent hover:border-b-blue-500">
+                                    <button onclick="app.deleteBook('${book.id}')" class="absolute top-2 right-2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition p-2"><i class="fas fa-trash"></i></button>
+                                    <div class="text-5xl text-center my-6"><i class="fas ${icon}"></i></div>
+                                    <h4 class="font-bold text-center mb-1 truncate px-2" title="${book.title}">${book.title}</h4>
+                                    <div class="flex items-center justify-center gap-2 mb-4">
+                                        <span class="text-[10px] uppercase font-bold px-2 py-0.5 bg-gray-100 rounded">${book.type}</span>
+                                        ${book.progress && book.progress != "0" ? '<span class="text-[10px] text-green-600 font-bold"><i class="fas fa-check-circle"></i> En lectura</span>' : ''}
+                                    </div>
+                                    <button onclick="app.openBook('${book.id}')" class="mt-auto w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition">Abrir Libro</button>
                                 </div>`;
                         });
                     }
-                }
-            },
-
-            async deleteBook(id) {
-                if((await Swal.fire({title:'¿Eliminar?', showCancelButton:true})).isConfirmed) {
-                    await this.apiCall({action:'deleteBook', userId:this.user.id, bookId:id}, "Borrando...");
-                    this.loadLibrary();
                 }
             },
 
@@ -236,44 +288,81 @@
                 document.getElementById('reader-title').textContent = this.currentBook.title;
                 document.getElementById('book-notes').value = this.currentBook.notes || '';
                 this.showView('reader');
+                
                 const viewer = document.getElementById('viewer');
-                viewer.innerHTML = '';
+                viewer.innerHTML = '<div class="h-full flex flex-col items-center justify-center text-gray-400"><div class="loader mb-4"></div>Preparando lector...</div>';
+                
                 document.getElementById('epub-controls').classList.add('hidden');
                 if (this.bookObj) { this.bookObj.destroy(); this.bookObj = null; }
+                if (this.pdfSaveTimer) clearInterval(this.pdfSaveTimer);
 
                 if (this.currentBook.type === 'epub') {
                     this.loadEpub();
                 } else {
-                    let url = this.currentBook.url;
-                    const driveId = url.match(/[-\w]{25,}/);
-                    if (url.includes('drive.google.com') && driveId) url = `https://drive.google.com/file/d/${driveId[0]}/preview`;
-                    else if (url.toLowerCase().endsWith('.pdf')) url = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
-                    viewer.innerHTML = `<iframe src="${url}" allowfullscreen></iframe>`;
+                    this.loadPdf();
                 }
+            },
+
+            loadPdf() {
+                let url = this.currentBook.url;
+                const driveId = url.match(/[-\w]{25,}/);
+                
+                // Formato compatible con iFrame de Google Drive
+                if (url.includes('drive.google.com') && driveId) {
+                    url = `https://drive.google.com/file/d/${driveId[0]}/preview`;
+                } else if (url.toLowerCase().endsWith('.pdf') && !url.includes('drive.google.com')) {
+                    url = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
+                }
+
+                // Inyectar iFrame
+                const viewer = document.getElementById('viewer');
+                viewer.innerHTML = `<iframe id="pdf-frame" src="${url}" class="w-full h-full" allowfullscreen></iframe>`;
+
+                // Sincronización de progreso para PDF (basada en tiempo para simular avance)
+                this.pdfSaveTimer = setInterval(() => {
+                    this.apiCall({ 
+                        action: 'updateProgress', 
+                        userId: this.user.id, 
+                        bookId: this.currentBook.id, 
+                        progress: "READING" // En PDF no podemos obtener el scroll de un iframe externo, marcamos como "en lectura"
+                    }, null, true);
+                }, 10000);
             },
 
             loadEpub() {
                 document.getElementById('epub-controls').classList.remove('hidden');
                 this.bookObj = ePub(this.currentBook.url);
-                this.rendition = this.bookObj.renderTo("viewer", { width: "100%", height: "100%" });
-                this.rendition.themes.register("light", { "body": { "background": "#fff", "color": "#333" }});
-                this.rendition.themes.register("sepia", { "body": { "background": "#f4ecd8", "color": "#5b4636" }});
-                this.rendition.themes.register("dark", { "body": { "background": "#121212", "color": "#e0e0e0" }});
+                this.rendition = this.bookObj.renderTo("viewer", { width: "100%", height: "100%", flow: "paginated" });
+                
+                this.rendition.themes.register("light", { "body": { "background": "#fff", "color": "#333", "font-family": "inherit" }});
+                this.rendition.themes.register("sepia", { "body": { "background": "#f4ecd8", "color": "#5b4636", "font-family": "inherit" }});
+                this.rendition.themes.register("dark", { "body": { "background": "#121212", "color": "#e0e0e0", "font-family": "inherit" }});
+                
                 this.rendition.themes.select(localStorage.getItem('duma_theme') || 'light');
                 this.rendition.themes.fontSize(`${this.fontSize}%`);
 
-                // SALTAR AL PROGRESO GUARDADO EN EL SHEET
-                const lastPos = this.currentBook.progress && this.currentBook.progress !== "0" ? this.currentBook.progress : undefined;
+                // Saltar a la última posición guardada
+                const lastPos = (this.currentBook.progress && this.currentBook.progress !== "0" && this.currentBook.progress !== "READING") ? this.currentBook.progress : undefined;
                 this.rendition.display(lastPos);
 
                 this.rendition.on("relocated", (loc) => {
-                    const pos = loc.start.cfi;
-                    document.getElementById('epub-progress').textContent = pos;
-                    this.currentBook.progress = pos;
-                    // Guardado automático silencioso en el servidor
-                    this.apiCall({ action: 'updateProgress', userId: this.user.id, bookId: this.currentBook.id, progress: pos });
+                    const cfi = loc.start.cfi;
+                    const percent = Math.floor(loc.start.percentage * 100);
+                    document.getElementById('epub-progress-display').textContent = `${percent}%`;
+                    this.currentBook.progress = cfi;
+                    
+                    // Guardado automático persistente
+                    this.apiCall({ 
+                        action: 'updateProgress', 
+                        userId: this.user.id, 
+                        bookId: this.currentBook.id, 
+                        progress: cfi 
+                    }, null, true);
                 });
             },
+
+            nextPage() { if(this.rendition) this.rendition.next(); },
+            prevPage() { if(this.rendition) this.rendition.prev(); },
 
             setTheme(t) {
                 document.body.className = `theme-${t}`;
@@ -281,41 +370,95 @@
                 if(this.rendition) this.rendition.themes.select(t);
             },
 
-            changeFontSize(s) {
-                this.fontSize += (s * 10);
-                if(this.rendition) this.rendition.themes.fontSize(`${this.fontSize}%`);
-            },
-
             toggleNotes() { document.getElementById('notes-panel').classList.toggle('hidden'); },
 
             async saveNotes() {
                 const notes = document.getElementById('book-notes').value;
-                const res = await this.apiCall({ action: 'updateProgress', userId: this.user.id, bookId: this.currentBook.id, notes: notes }, "Guardando...");
-                if (res.status === 'success') { this.currentBook.notes = notes; Swal.fire({title:'Guardado', icon:'success', timer:800, showConfirmButton:false}); }
+                const res = await this.apiCall({ 
+                    action: 'updateProgress', 
+                    userId: this.user.id, 
+                    bookId: this.currentBook.id, 
+                    notes: notes 
+                }, "Sincronizando notas...");
+                
+                if (res.status === 'success') { 
+                    this.currentBook.notes = notes; 
+                    Swal.fire({ title: '¡Guardado!', icon: 'success', timer: 1000, showConfirmButton: false }); 
+                }
+            },
+
+            async showSettings() {
+                Swal.fire({
+                    title: 'Ajustes de Dumareader',
+                    html: `
+                        <div class="text-left text-sm space-y-4">
+                            <div class="p-3 bg-gray-50 rounded-lg border">
+                                <p class="font-bold text-gray-700">Usuario Activo</p>
+                                <p class="font-mono text-xs">${this.user.username}</p>
+                            </div>
+                            <div class="p-3 bg-gray-50 rounded-lg border">
+                                <p class="font-bold text-gray-700">ID de Cuenta (Soporte)</p>
+                                <p class="font-mono text-[10px] break-all">${this.user.id}</p>
+                            </div>
+                            <button onclick="app.clearCache()" class="w-full py-2 bg-gray-200 rounded text-xs font-bold hover:bg-gray-300">Limpiar caché de la app</button>
+                        </div>
+                    `,
+                    showConfirmButton: true,
+                    confirmButtonText: 'Cerrar'
+                });
+            },
+
+            clearCache() {
+                localStorage.clear();
+                location.reload();
             },
 
             async uploadFile(e) {
                 const file = e.target.files[0];
+                if(!file) return;
                 const reader = new FileReader();
                 reader.onload = async (ev) => {
                     const base64 = ev.target.result.split(',')[1];
-                    const res = await this.apiCall({ action: 'uploadBook', userId: this.user.id, filename: file.name, mimeType: file.type, base64: base64, title: file.name.split('.')[0] }, "Subiendo...");
+                    const res = await this.apiCall({ 
+                        action: 'uploadBook', 
+                        userId: this.user.id, 
+                        filename: file.name, 
+                        mimeType: file.type, 
+                        base64: base64, 
+                        title: file.name.split('.')[0] 
+                    }, "Subiendo archivo a tu nube...");
                     if (res.status === 'success') this.loadLibrary();
                 };
                 reader.readAsDataURL(file);
             },
 
             async addUrlPrompt() {
-                const { value: url } = await Swal.fire({ title: 'URL del libro', input: 'url' });
+                const { value: url } = await Swal.fire({ title: 'Pega el enlace del libro', input: 'url', placeholder: 'https://...' });
                 if (url) {
-                    const { value: title } = await Swal.fire({ title: 'Título', input: 'text' });
-                    if (title) { await this.apiCall({ action: 'addBookUrl', userId: this.user.id, url: url, title: title }, "Guardando..."); this.loadLibrary(); }
+                    const { value: title } = await Swal.fire({ title: 'Escribe un título', input: 'text', placeholder: 'Ej: El Quijote' });
+                    if (title) { 
+                        await this.apiCall({ action: 'addBookUrl', userId: this.user.id, url: url, title: title }, "Enlazando..."); 
+                        this.loadLibrary(); 
+                    }
+                }
+            },
+
+            async deleteBook(id) {
+                const res = await Swal.fire({
+                    title: '¿Eliminar libro?',
+                    text: "Esto borrará el archivo y tu progreso permanentemente.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    confirmButtonText: 'Sí, eliminar'
+                });
+                if(res.isConfirmed) {
+                    await this.apiCall({ action: 'deleteBook', userId: this.user.id, bookId: id }, "Borrando...");
+                    this.loadLibrary();
                 }
             }
         };
 
-        const loginUser = document.getElementById('login-user'), loginPass = document.getElementById('login-pass');
-        const regEmail = document.getElementById('reg-email'), regUser = document.getElementById('reg-user'), regPass = document.getElementById('reg-pass');
         document.addEventListener('DOMContentLoaded', () => app.init());
     </script>
 </body>
