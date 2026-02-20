@@ -19,10 +19,6 @@
             --accent: #3b82f6;
         }
 
-        .theme-light { --bg-color: #ffffff; --text-color: #333333; --card-bg: #f3f4f6; }
-        .theme-sepia { --bg-color: #f4ecd8; --text-color: #5b4636; --card-bg: #eaddc5; }
-        .theme-dark { --bg-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e; --border-color: #333; }
-
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
@@ -45,7 +41,7 @@
 <body>
 
     <script>
-        // REEMPLAZA ESTA URL CON TU WEB APP DE APPS SCRIPT
+        // Enlace de AppScript actualizado
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzy25lfAqoKTKMXEnLS1whgbR3hLY6hDVYFMo16bnBFBIsSM9E0zTmvp0C_ZLNolnA1/exec"; 
     </script>
 
@@ -55,16 +51,13 @@
         </h1>
         <div id="user-menu" class="hidden flex items-center gap-4">
             <span id="user-greeting" class="font-medium hidden sm:inline"></span>
-            <button onclick="app.showSettings()" class="text-gray-500 hover:text-blue-600 transition p-2">
-                <i class="fas fa-cog fa-lg"></i>
-            </button>
             <button onclick="app.logout()" class="text-red-500 hover:text-red-700 text-sm font-bold transition">Salir</button>
         </div>
     </header>
 
     <main class="flex-grow flex flex-col items-center p-4 sm:p-8 w-full max-w-7xl mx-auto">
         
-        <!-- AUTH -->
+        <!-- AUTH VIEW -->
         <div id="view-auth" class="w-full max-w-md card rounded-2xl shadow-xl p-8 mt-10">
             <div class="flex border-b border-gray-200 mb-6 pb-2">
                 <button onclick="app.switchAuthTab('login')" id="tab-login" class="flex-1 text-center font-bold text-blue-600 border-b-2 border-blue-600 pb-2">Entrar</button>
@@ -83,7 +76,7 @@
             </form>
         </div>
 
-        <!-- LIBRARY -->
+        <!-- LIBRARY VIEW -->
         <div id="view-library" class="hidden w-full">
             <div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
                 <h2 class="text-3xl font-light">Mi Biblioteca</h2>
@@ -98,13 +91,18 @@
             <div id="library-loader" class="hidden mt-10"><div class="loader"></div></div>
         </div>
 
-        <!-- READER -->
+        <!-- READER VIEW -->
         <div id="view-reader" class="hidden fixed inset-0 z-[100] bg-[var(--bg-color)] flex flex-col w-full h-full overflow-hidden">
             <div class="card shadow-sm p-3 border-b border-[var(--border-color)] flex justify-between items-center gap-4">
                 <button onclick="app.closeReader()" class="px-4 py-1 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition font-bold">
                     <i class="fas fa-arrow-left mr-1"></i> Volver
                 </button>
-                <h3 id="reader-title" class="font-bold truncate flex-1 text-center">Libro</h3>
+                <div id="pdf-manual-controls" class="hidden flex items-center gap-2">
+                    <span class="text-xs font-bold uppercase opacity-50">Página:</span>
+                    <input type="number" id="pdf-page-input" class="w-16 p-1 border rounded text-center font-bold" min="1" value="1">
+                    <button onclick="app.savePdfPage()" class="bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold">Guardar Avance</button>
+                </div>
+                <h3 id="reader-title" class="font-bold truncate flex-1 text-center hidden sm:block">Libro</h3>
                 <div class="flex items-center gap-2">
                     <button onclick="app.toggleNotes()" class="p-2 text-blue-500 hover:bg-blue-100 rounded transition"><i class="fas fa-edit"></i></button>
                 </div>
@@ -114,21 +112,24 @@
                 <div id="viewer-container">
                     <div id="viewer" class="w-full h-full"></div>
                 </div>
-                <!-- Panel Notas Lateral -->
+                <!-- Panel Notas -->
                 <div id="notes-panel" class="hidden w-80 bg-[var(--card-bg)] shadow-2xl p-4 flex flex-col h-full absolute right-0 top-0 z-[120] border-l border-[var(--border-color)]">
                     <div class="flex justify-between items-center mb-4">
                         <h4 class="font-bold">Anotaciones</h4>
                         <button onclick="app.toggleNotes()"><i class="fas fa-times"></i></button>
                     </div>
-                    <textarea id="book-notes" class="flex-1 w-full p-3 border rounded-xl resize-none bg-transparent outline-none focus:border-blue-500"></textarea>
-                    <button onclick="app.saveNotes()" class="w-full mt-4 bg-blue-600 text-white p-3 rounded-xl font-bold">Guardar</button>
+                    <textarea id="book-notes" class="flex-1 w-full p-3 border rounded-xl resize-none bg-transparent outline-none focus:border-blue-500" placeholder="Escribe aquí..."></textarea>
+                    <button onclick="app.saveNotes()" class="w-full mt-4 bg-blue-600 text-white p-3 rounded-xl font-bold">Guardar Notas</button>
                 </div>
             </div>
             
+            <!-- EPUB CONTROLS -->
             <div id="epub-controls" class="hidden p-3 border-t bg-[var(--card-bg)] flex justify-between items-center">
-                <button onclick="app.prevPage()" class="px-6 py-2 bg-gray-100 rounded-lg">Anterior</button>
-                <span id="epub-progress" class="font-bold">0%</span>
-                <button onclick="app.nextPage()" class="px-6 py-2 bg-gray-100 rounded-lg">Siguiente</button>
+                <button onclick="app.prevPage()" class="px-6 py-2 bg-gray-100 rounded-lg font-bold"><i class="fas fa-chevron-left"></i></button>
+                <div class="text-center">
+                    <span id="epub-progress" class="font-bold text-blue-600">0%</span>
+                </div>
+                <button onclick="app.nextPage()" class="px-6 py-2 bg-gray-100 rounded-lg font-bold"><i class="fas fa-chevron-right"></i></button>
             </div>
         </div>
 
@@ -165,21 +166,46 @@
                     if (loadingMsg && !silent) Swal.close();
                     return result;
                 } catch (e) {
-                    if (loadingMsg && !silent) { Swal.close(); Swal.fire('Error', 'Error de conexión.', 'error'); }
+                    if (loadingMsg && !silent) { Swal.close(); Swal.fire('Error', 'Error de conexión con el servidor.', 'error'); }
                     return { status: 'error' };
                 }
             },
 
             switchAuthTab(tab) {
-                ['login', 'register'].forEach(t => document.getElementById(`form-${t}`).classList.add('hidden'));
+                ['login', 'register'].forEach(t => {
+                    document.getElementById(`form-${t}`).classList.add('hidden');
+                    document.getElementById(`tab-${t}`).className = "flex-1 text-center font-bold text-gray-400 pb-2";
+                });
                 document.getElementById(`form-${tab}`).classList.remove('hidden');
+                document.getElementById(`tab-${tab}`).className = "flex-1 text-center font-bold text-blue-600 border-b-2 border-blue-600 pb-2";
             },
 
             async handleLogin(e) {
                 e.preventDefault();
-                const res = await this.apiCall({ action: 'login', username: document.getElementById('login-user').value, password: document.getElementById('login-pass').value }, "Entrando...");
-                if (res.status === 'success') { this.user = { id: res.userId, username: res.username }; localStorage.setItem('duma_user', JSON.stringify(this.user)); this.loadLibrary(); }
-                else Swal.fire('Error', res.message, 'error');
+                const res = await this.apiCall({ 
+                    action: 'login', 
+                    username: document.getElementById('login-user').value, 
+                    password: document.getElementById('login-pass').value 
+                }, "Verificando...");
+                if (res.status === 'success') { 
+                    this.user = { id: res.userId, username: res.username }; 
+                    localStorage.setItem('duma_user', JSON.stringify(this.user)); 
+                    this.loadLibrary(); 
+                } else Swal.fire('Error', res.message, 'error');
+            },
+
+            async handleRegister(e) {
+                e.preventDefault();
+                const res = await this.apiCall({ 
+                    action: 'register', 
+                    username: document.getElementById('reg-user').value, 
+                    email: document.getElementById('reg-email').value,
+                    password: document.getElementById('reg-pass').value 
+                }, "Creando cuenta...");
+                if (res.status === 'success') { 
+                    Swal.fire('Éxito', 'Cuenta creada. Ahora puedes entrar.', 'success');
+                    this.switchAuthTab('login');
+                } else Swal.fire('Error', res.message, 'error');
             },
 
             async loadLibrary() {
@@ -192,20 +218,23 @@
                 if (res.status === 'success') {
                     this.library = res.data;
                     this.library.forEach(book => {
+                        const hasProgress = book.progress && book.progress !== "0";
                         grid.innerHTML += `
                             <div class="card rounded-2xl p-5 shadow-sm hover:shadow-lg transition flex flex-col relative group">
                                 <button onclick="app.deleteBook('${book.id}')" class="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100 p-2"><i class="fas fa-trash"></i></button>
                                 <div class="text-5xl text-center my-6"><i class="fas ${book.type==='pdf'?'fa-file-pdf text-red-500':'fa-book text-green-500'}"></i></div>
                                 <h4 class="font-bold truncate text-center">${book.title}</h4>
-                                <p class="text-[10px] text-center text-blue-500 font-bold mb-4">${book.progress && book.progress != "0" ? 'PROGRESO GUARDADO' : 'NUEVO'}</p>
-                                <button onclick="app.openBook('${book.id}')" class="mt-auto w-full bg-blue-600 text-white font-bold py-3 rounded-xl">Leer Libro</button>
+                                <p class="text-[10px] text-center ${hasProgress ? 'text-green-600' : 'text-blue-500'} font-bold mb-4">
+                                    ${hasProgress ? 'AVANCE: ' + (book.type === 'pdf' ? 'Pág ' + book.progress : book.progress.substring(0,8) + '...') : 'NUEVO'}
+                                </p>
+                                <button onclick="app.openBook('${book.id}')" class="mt-auto w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition">Continuar Lectura</button>
                             </div>`;
                     });
                 }
             },
 
             async openBook(bookId) {
-                const res = await this.apiCall({ action: 'getLibrary', userId: this.user.id }, "Cargando posición...");
+                const res = await this.apiCall({ action: 'getLibrary', userId: this.user.id }, "Recuperando avance...");
                 this.currentBook = res.data.find(b => b.id === bookId);
                 
                 document.getElementById('reader-title').textContent = this.currentBook.title;
@@ -215,20 +244,38 @@
                 const viewer = document.getElementById('viewer');
                 viewer.innerHTML = '';
                 document.getElementById('epub-controls').classList.add('hidden');
+                document.getElementById('pdf-manual-controls').classList.add('hidden');
 
                 if (this.currentBook.type === 'epub') {
                     this.renderEpub();
                 } else {
-                    // USO DE VISOR NATIVO PARA EVITAR CORS
+                    document.getElementById('pdf-manual-controls').classList.remove('hidden');
                     let driveUrl = this.currentBook.url;
+                    
+                    // Lógica de salto de página para PDF
+                    const page = (this.currentBook.progress && !isNaN(this.currentBook.progress)) ? parseInt(this.currentBook.progress) : 1;
+                    document.getElementById('pdf-page-input').value = page;
+
                     if (driveUrl.includes('drive.google.com')) {
                         const fileId = driveUrl.match(/[-\w]{25,}/);
-                        driveUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+                        // Inyectamos el anclaje de página en la URL de previsualización
+                        driveUrl = `https://drive.google.com/file/d/${fileId}/preview#page=${page}`;
                     }
-                    viewer.innerHTML = `<iframe src="${driveUrl}" class="w-full h-full" allow="autoplay"></iframe>`;
-                    // Guardar que se está leyendo para sincronizar entre dispositivos
-                    this.apiCall({ action: 'updateProgress', userId: this.user.id, bookId: this.currentBook.id, progress: "LECTURA_ACTIVA" }, null, true);
+                    
+                    viewer.innerHTML = `<iframe src="${driveUrl}" class="w-full h-full" id="pdf-frame"></iframe>`;
                 }
+            },
+
+            async savePdfPage() {
+                const page = document.getElementById('pdf-page-input').value;
+                await this.apiCall({ 
+                    action: 'updateProgress', 
+                    userId: this.user.id, 
+                    bookId: this.currentBook.id, 
+                    progress: page 
+                }, "Guardando página...");
+                this.currentBook.progress = page;
+                Swal.fire({ title: 'Página ' + page + ' guardada', icon: 'success', timer: 1000, showConfirmButton: false });
             },
 
             renderEpub() {
@@ -237,13 +284,14 @@
                 this.rendition = this.bookObj.renderTo("viewer", { width: "100%", height: "100%", flow: "paginated" });
                 
                 this.bookObj.ready.then(() => {
-                    const savedPos = (this.currentBook.progress && this.currentBook.progress !== "0" && this.currentBook.progress !== "LECTURA_ACTIVA") ? this.currentBook.progress : undefined;
+                    const savedPos = (this.currentBook.progress && this.currentBook.progress !== "0") ? this.currentBook.progress : undefined;
                     this.rendition.display(savedPos);
                 });
 
                 this.rendition.on("relocated", (loc) => {
                     const cfi = loc.start.cfi;
                     document.getElementById('epub-progress').textContent = Math.round(loc.start.percentage * 100) + "%";
+                    // Guardado automático para EPUB
                     this.apiCall({ action: 'updateProgress', userId: this.user.id, bookId: this.currentBook.id, progress: cfi }, null, true);
                 });
             },
@@ -252,34 +300,50 @@
             prevPage() { if(this.rendition) this.rendition.prev(); },
 
             closeReader() {
-                if (this.bookObj) this.bookObj.destroy();
+                if (this.bookObj) { this.bookObj.destroy(); this.bookObj = null; }
                 this.loadLibrary();
             },
 
             async uploadFile(e) {
                 const file = e.target.files[0];
+                if(!file) return;
                 const reader = new FileReader();
                 reader.onload = async (ev) => {
                     const base64 = ev.target.result.split(',')[1];
-                    await this.apiCall({ action: 'uploadBook', userId: this.user.id, filename: file.name, mimeType: file.type, base64: base64, title: file.name.split('.')[0] }, "Subiendo...");
+                    await this.apiCall({ 
+                        action: 'uploadBook', 
+                        userId: this.user.id, 
+                        filename: file.name, 
+                        mimeType: file.type, 
+                        base64: base64, 
+                        title: file.name.split('.')[0] 
+                    }, "Subiendo libro a la nube...");
                     this.loadLibrary();
                 };
                 reader.readAsDataURL(file);
             },
 
             async deleteBook(id) {
-                const res = await this.apiCall({ action: 'deleteBook', userId: this.user.id, bookId: id }, "Borrando...");
-                this.loadLibrary();
+                const result = await Swal.fire({
+                    title: '¿Eliminar libro?',
+                    text: "Esta acción no se puede deshacer.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, eliminar'
+                });
+                if (result.isConfirmed) {
+                    await this.apiCall({ action: 'deleteBook', userId: this.user.id, bookId: id }, "Borrando...");
+                    this.loadLibrary();
+                }
             },
 
             toggleNotes() { document.getElementById('notes-panel').classList.toggle('hidden'); },
             async saveNotes() {
                 const notes = document.getElementById('book-notes').value;
-                await this.apiCall({ action: 'updateProgress', userId: this.user.id, bookId: this.currentBook.id, notes: notes }, "Guardando...");
+                await this.apiCall({ action: 'updateProgress', userId: this.user.id, bookId: this.currentBook.id, notes: notes }, "Guardando notas...");
                 Swal.fire({ title: 'Notas guardadas', icon: 'success', timer: 1000, showConfirmButton: false });
             },
-            logout() { localStorage.clear(); location.reload(); },
-            showSettings() { Swal.fire({ title: 'Ajustes', text: `Usuario: ${this.user.username}`, icon: 'info' }); }
+            logout() { localStorage.clear(); location.reload(); }
         };
 
         document.addEventListener('DOMContentLoaded', () => app.init());
