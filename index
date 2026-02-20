@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reader Pro Multi | Andres Urrea</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #6366f1; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --danger: #ef4444; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; min-height: 100vh; }
+        
+        header { background: var(--card); padding: 1.5rem; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3); border-bottom: 1px solid #334155; }
+        .controls { display: flex; justify-content: center; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+        
+        input[type="text"] { padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; width: 280px; outline: none; }
+        button { padding: 12px 20px; border-radius: 8px; border: none; background: var(--primary); color: white; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-sec { background: #334155; }
+
+        .library { max-width: 800px; margin: 20px auto; padding: 20px; background: var(--card); border-radius: 12px; border: 1px solid #334155; width: 90%; }
+        .book-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #334155; }
+        
+        main { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 20px; width: 100%; box-sizing: border-box; }
+        
+        /* Contenedores de Visualización */
+        #viewer-pdf { width: 100%; max-width: 850px; background: white; border-radius: 8px; display: none; }
+        #viewer-epub { width: 100%; max-width: 800px; height: 600px; background: white; border-radius: 8px; display: none; color: black; }
+        canvas { width: 100%; height: auto; display: block; }
+
+        .nav-ui { margin-bottom: 15px; background: var(--card); padding: 10px 25px; border-radius: 50px; display: none; align-items: center; gap: 15px; border: 1px solid var(--primary); }
+
+        footer { background: var(--card); padding: 20px; text-align: center; border-top: 1px solid #334155; font-size: 0.9rem; }
+        footer a { color: #22c55e; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h2 style="margin:0">📚 Reader<span style="color:var(--primary)">Pro</span></h2>
+    <div class="controls">
+        <input type="text" id="url-input" placeholder="Enlace de PDF o EPUB...">
+        <button onclick="handleUrlLoad()">Cargar Enlace</button>
+        <input type="file" id="file-upload" accept=".pdf,.epub" style="display:none">
+        <button class="btn-sec" onclick="document.getElementById('file-upload').click()">📁 Subir Archivo</button>
+    </div>
+    <div id="status-msg" style="font-size: 0.8rem; color: #94a3b8; margin-top: 10px;">Listo</div>
+</header>
+
+<div class="library">
+    <h3 style="margin:0 0 10px 0">📖 Mi Biblioteca (PDF/EPUB)</h3>
+    <div id="book-list"><em>Vacía</em></div>
+</div>
+
+<main>
+    <div class="nav-ui" id="nav-ui">
+        <button id="prev-btn">◀</button>
+        <span id="pos-info">Posición: -</span>
+        <button id="next-btn">▶</button>
+    </div>
+    
+    <div id="viewer-pdf">
+        <canvas id="pdf-canvas"></canvas>
+    </div>
+    <div id="viewer-epub"></div>
+</main>
+
+<footer>
+    <p>Desarrollado por <strong>Andres Urrea</strong> - Proyecto Personal</p>
+    <p>Contacto: <a href="https://wa.me/5693076322" target="_blank">📲 +5693076322</a></p>
+</footer>
+
+<script>
+    // Configuración PDF.js
+    const pdfjs = window['pdfjs-dist/build/pdf'];
+    pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+    let db, currentBook = null, rendition = null, pdfDoc = null, pageNum = 1, currentId = "";
+
+    // 1. Base de Datos
+    const request = indexedDB.open("AndresUrreaReader", 2);
+    request.onupgradeneeded = e => {
+        db = e.target.result;
+        if(!db.objectStoreNames.contains("books")) db.createObjectStore("books", { keyPath: "id" });
+    };
+    request.onsuccess = e => { db = e.target.result; displayLibrary(); };
+
+    // 2. Limpiador de URLs
+    function cleanUrl(url) {
+        if (url.includes('drive.google.com')) {
+            const id = url.match(/[-\w]{25,}/);
+            return id ? `https://docs.google.com/uc?export=download&id=${id[0]}` : url;
+        }
+        return `https://corsproxy.io/?${encodeURIComponent(url.trim())}`;
+    }
+
+    // 3. Cargar desde URL
+    function handleUrlLoad() {
+        const url = document.getElementById('url-input').value;
+        if(!url) return;
+        const type = url.toLowerCase().endsWith('.epub') ? 'epub' : 'pdf';
+        openBook(cleanUrl(url), url, type);
+    }
+
+    // 4. Subir Archivo
+    document.getElementById('file-upload').addEventListener('change', e => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = function() {
+            const type = file.name.toLowerCase().endsWith('.epub') ? 'epub' : 'pdf';
+            const bookData = { id: file.name, name: file.name, data: this.result, type: type };
+            db.transaction("books", "readwrite").objectStore("books").put(bookData);
+            displayLibrary();
+            openBook(this.result, file.name, type);
+        };
+        reader.readAsArrayBuffer(file);
+    });
+
+    // 5. Motor de Apertura
+    async function openBook(data, id, type) {
+        currentId = id;
+        document.getElementById('nav-ui').style.display = 'flex';
+        document.getElementById('viewer-pdf').style.display = 'none';
+        document.getElementById('viewer-epub').style.display = 'none';
+
+        if(type === 'pdf') {
+            initPDF(data);
+        } else {
+            initEPUB(data);
+        }
+    }
+
+    // --- LÓGICA PDF ---
+    async function initPDF(data) {
+        pdfDoc = await pdfjs.getDocument(data).promise;
+        document.getElementById('viewer-pdf').style.display = 'block';
+        const saved = localStorage.getItem('pos_'+currentId);
+        pageNum = saved ? parseInt(saved) : 1;
+        renderPDFPage(pageNum);
+        
+        document.getElementById('prev-btn').onclick = () => { if(pageNum > 1) renderPDFPage(--pageNum); };
+        document.getElementById('next-btn').onclick = () => { if(pageNum < pdfDoc.numPages) renderPDFPage(++pageNum); };
+    }
+
+    async function renderPDFPage(num) {
+        const page = await pdfDoc.getPage(num);
+        const canvas = document.getElementById('pdf-canvas');
+        const ctx = canvas.getContext('2d');
+        const viewport = page.getViewport({ scale: 1.5 });
+        canvas.height = viewport.height; canvas.width = viewport.width;
+        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+        document.getElementById('pos-info').textContent = `Página ${num} de ${pdfDoc.numPages}`;
+        localStorage.setItem('pos_'+currentId, num);
+    }
+
+    // --- LÓGICA EPUB ---
+    async function initEPUB(data) {
+        const viewer = document.getElementById('viewer-epub');
+        viewer.style.display = 'block';
+        viewer.innerHTML = "";
+        const book = ePub(data);
+        rendition = book.renderTo("viewer-epub", { width: "100%", height: "100%" });
+        
+        const saved = localStorage.getItem('pos_'+currentId);
+        rendition.display(saved || undefined);
+
+        rendition.on("relocated", location => {
+            localStorage.setItem('pos_'+currentId, location.start.cfi);
+            document.getElementById('pos-info').textContent = "EPUB: Guardado";
+        });
+
+        document.getElementById('prev-btn').onclick = () => rendition.prev();
+        document.getElementById('next-btn').onclick = () => rendition.next();
+    }
+
+    function displayLibrary() {
+        const list = document.getElementById('book-list');
+        db.transaction("books").objectStore("books").getAll().onsuccess = e => {
+            const books = e.target.result;
+            if(books.length > 0) list.innerHTML = "";
+            books.forEach(b => {
+                const div = document.createElement('div');
+                div.className = 'book-item';
+                div.innerHTML = `<span>${b.type === 'pdf' ? '📕' : '📘'} ${b.name}</span> <button onclick="loadSaved('${b.id}')">Leer</button>`;
+                list.appendChild(div);
+            });
+        };
+    }
+
+    function loadSaved(id) {
+        db.transaction("books").objectStore("books").get(id).onsuccess = e => {
+            openBook(e.target.result.data, id, e.target.result.type);
+        };
+    }
+</script>
+</body>
+</html>
