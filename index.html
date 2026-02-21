@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dumareader Pro - Edición Premium</title>
+    <title>Dumareader Pro - Edición Definitiva</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;700&family=Inter:wght@400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
 
         :root { 
             --kindle-bg: #f4f1ea; 
@@ -23,12 +23,12 @@
             color: #0f172a; 
             font-family: 'Inter', sans-serif; 
             margin: 0; 
-            overflow-x: hidden;
+            height: 100vh;
+            overflow: hidden;
         }
 
         .hidden { display: none !important; }
         
-        /* Contenedor tipo Kindle */
         #pdf-render-container {
             width: 100%; height: 100%; overflow-y: auto; 
             background: var(--kindle-bg);
@@ -38,32 +38,27 @@
         }
 
         canvas { 
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15); 
-            max-width: 90%; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
+            max-width: 95%; 
             height: auto !important; 
-            margin-bottom: 40px; 
-            border: 1px solid rgba(0,0,0,0.05);
+            margin-bottom: 30px; 
+            border-radius: 8px;
+            transition: opacity 0.3s ease;
         }
         
-        .loader { 
-            border: 2px solid #e2e8f0; border-top: 2px solid var(--accent); 
-            border-radius: 50%; width: 30px; height: 30px; animation: spin 0.8s linear infinite; 
+        .loader-ring { 
+            border: 3px solid #f3f3f3; border-top: 3px solid var(--accent); 
+            border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; 
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Estilo de botones flotantes */
-        .nav-btn {
-            background: white;
-            border: 1px solid #e2e8f0;
-            width: 45px; height: 45px;
-            border-radius: 50%;
-            display: flex; items-center; justify-content: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            transition: all 0.2s ease;
+        .btn-ios {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0,0,0,0.05);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .nav-btn:hover { transform: scale(1.1); border-color: var(--accent); color: var(--accent); }
-
-        iframe { width: 100%; height: 100%; border: none; }
+        .btn-ios:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
@@ -73,37 +68,38 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
     </script>
 
-    <header class="bg-white/80 backdrop-blur-md border-b p-4 flex justify-between items-center sticky top-0 z-50 shadow-sm">
+    <!-- HEADER ESTILO APPLE -->
+    <header class="bg-white/70 backdrop-blur-xl border-b p-4 flex justify-between items-center sticky top-0 z-[60]">
         <div class="flex items-center gap-3">
-            <div class="bg-black p-2 rounded-lg text-white">
-                <i class="fas fa-bookmark"></i>
+            <div class="bg-blue-600 w-8 h-8 rounded-lg flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                <i class="fas fa-book-open text-sm"></i>
             </div>
-            <h1 class="text-lg font-black tracking-tight italic">DUMA<span class="text-blue-600">READER</span></h1>
+            <h1 class="text-lg font-black tracking-tight">DUMA<span class="text-blue-600">READER</span></h1>
         </div>
         <div id="user-menu" class="hidden flex items-center gap-4">
-            <span id="user-greeting" class="text-[9px] font-bold text-gray-400 bg-gray-50 px-3 py-1.5 rounded-full border tracking-widest uppercase"></span>
-            <button onclick="app.logout()" class="text-gray-400 hover:text-red-500 transition-colors"><i class="fas fa-power-off"></i></button>
+            <span id="user-greeting" class="text-[10px] font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full border border-gray-200 uppercase tracking-tighter"></span>
+            <button onclick="app.logout()" class="text-gray-400 hover:text-red-500 transition-colors"><i class="fas fa-sign-out-alt"></i></button>
         </div>
     </header>
 
-    <main class="w-full max-w-6xl mx-auto p-4 lg:p-6">
+    <main class="w-full max-w-7xl mx-auto h-[calc(100vh-64px)] overflow-y-auto p-4 lg:p-6">
         
-        <!-- LOGIN / REGISTRO -->
-        <div id="view-auth" class="max-w-sm mx-auto mt-20 bg-white rounded-3xl shadow-xl border p-8">
-            <div class="text-center mb-8">
-                <h2 class="text-2xl font-black">Continuar leyendo</h2>
-                <p class="text-gray-400 text-xs mt-1">Sincroniza tu progreso en la nube</p>
+        <!-- AUTH VIEW -->
+        <div id="view-auth" class="max-w-sm mx-auto mt-20 bg-white rounded-[2rem] shadow-2xl border p-10 animate-in fade-in zoom-in duration-300">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-black">Hola.</h2>
+                <p class="text-gray-400 text-sm mt-2">Tu biblioteca personal te espera.</p>
             </div>
-            <div class="flex mb-6 bg-gray-100 p-1 rounded-2xl">
-                <button onclick="app.switchAuthTab('login')" id="tab-login" class="flex-1 py-2.5 rounded-xl font-bold text-xs transition-all bg-white shadow-sm text-blue-600">LOGIN</button>
-                <button onclick="app.switchAuthTab('register')" id="tab-register" class="flex-1 py-2.5 rounded-xl font-bold text-xs transition-all text-gray-400">REGISTRO</button>
+            <div class="flex mb-8 bg-gray-100 p-1.5 rounded-2xl">
+                <button onclick="app.switchAuthTab('login')" id="tab-login" class="flex-1 py-3 rounded-xl font-bold text-xs transition-all bg-white shadow-sm text-blue-600">ENTRAR</button>
+                <button onclick="app.switchAuthTab('register')" id="tab-register" class="flex-1 py-3 rounded-xl font-bold text-xs transition-all text-gray-400">UNIRSE</button>
             </div>
-            <form id="form-login" onsubmit="app.handleLogin(event)" class="space-y-3">
-                <input type="text" id="login-user" placeholder="Usuario" required class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all">
-                <input type="password" id="login-pass" placeholder="Contraseña" required class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all">
-                <button type="submit" class="w-full bg-blue-600 text-white font-black p-4 rounded-2xl shadow-lg hover:bg-blue-700 transition-all active:scale-95">ENTRAR</button>
+            <form id="form-login" onsubmit="app.handleLogin(event)" class="space-y-4">
+                <input type="text" id="login-user" placeholder="Usuario" required class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium">
+                <input type="password" id="login-pass" placeholder="Contraseña" required class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium">
+                <button type="submit" class="w-full bg-blue-600 text-white font-black p-4 rounded-2xl shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all">ACCEDER</button>
             </form>
-            <form id="form-register" class="hidden space-y-3" onsubmit="app.handleRegister(event)">
+            <form id="form-register" class="hidden space-y-4" onsubmit="app.handleRegister(event)">
                 <input type="email" id="reg-email" placeholder="Email" required class="w-full p-4 bg-gray-50 border rounded-2xl outline-none">
                 <input type="text" id="reg-user" placeholder="Usuario" required class="w-full p-4 bg-gray-50 border rounded-2xl outline-none">
                 <input type="password" id="reg-pass" placeholder="Contraseña" required class="w-full p-4 bg-gray-50 border rounded-2xl outline-none">
@@ -111,59 +107,62 @@
             </form>
         </div>
 
-        <!-- BIBLIOTECA -->
-        <div id="view-library" class="hidden animate-fade-in">
-            <div class="flex flex-col md:flex-row justify-between items-end mb-10 gap-4 mt-6">
+        <!-- LIBRARY VIEW -->
+        <div id="view-library" class="hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-12 gap-6 pt-6">
                 <div>
-                    <h2 class="text-4xl font-black tracking-tight">Estantería</h2>
-                    <p class="text-gray-400 font-medium">Continúa donde lo dejaste.</p>
+                    <h2 class="text-5xl font-black tracking-tighter">Lecturas</h2>
+                    <p class="text-gray-400 font-semibold mt-1">Donde el progreso nunca se pierde.</p>
                 </div>
-                <label class="bg-blue-600 text-white px-8 py-3 rounded-2xl font-black cursor-pointer shadow-lg hover:bg-blue-700 transition-all flex items-center gap-2">
-                    <i class="fas fa-plus"></i> NUEVA LECTURA
+                <label class="bg-gray-900 text-white px-10 py-4 rounded-2xl font-black cursor-pointer shadow-xl hover:bg-blue-600 transition-all flex items-center gap-3 active:scale-95">
+                    <i class="fas fa-plus text-lg"></i> SUBIR LIBRO
                     <input type="file" id="file-upload" accept=".pdf,.epub" class="hidden" onchange="app.uploadFile(event)">
                 </label>
             </div>
 
-            <div id="library-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6"></div>
-            <div id="library-loader" class="hidden py-32 text-center"><div class="loader mx-auto"></div></div>
+            <div id="library-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8"></div>
+            <div id="library-loader" class="hidden py-40 text-center"><div class="loader-ring mx-auto"></div></div>
         </div>
 
-        <!-- LECTOR PROFESIONAL -->
-        <div id="view-reader" class="hidden fixed inset-0 z-[100] bg-white flex flex-col">
-            <!-- Toolbar Minimalista -->
-            <div class="h-14 border-b flex justify-between items-center px-6 bg-white shrink-0">
-                <button onclick="app.closeReader()" class="text-xs font-black uppercase tracking-widest text-gray-400 hover:text-black transition">
-                    <i class="fas fa-chevron-left mr-2"></i> Biblioteca
+        <!-- READER VIEW (FULLSCREEN) -->
+        <div id="view-reader" class="hidden fixed inset-0 z-[100] bg-white flex flex-col animate-in fade-in zoom-in duration-300">
+            <!-- TOOLBAR SUPERIOR -->
+            <div class="h-16 border-b flex justify-between items-center px-6 bg-white/90 backdrop-blur-md shrink-0 z-[110]">
+                <button onclick="app.closeReader()" class="flex items-center gap-2 text-xs font-black uppercase tracking-tighter text-gray-500 hover:text-black transition group">
+                    <i class="fas fa-arrow-left transition-transform group-hover:-translate-x-1"></i> VOLVER
                 </button>
                 
-                <div class="flex items-center gap-6">
-                    <div class="flex items-center gap-1">
-                        <button onclick="app.prevPage()" class="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg"><i class="fas fa-chevron-left text-xs"></i></button>
-                        <div class="px-4 text-[11px] font-black text-blue-600 bg-blue-50 py-1.5 rounded-full">
-                            PÁGINA <span id="current-page">1</span> / <span id="total-pages">?</span>
-                        </div>
-                        <button onclick="app.nextPage()" class="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg"><i class="fas fa-chevron-right text-xs"></i></button>
+                <div class="flex items-center gap-2 bg-gray-100 p-1 rounded-2xl">
+                    <button onclick="app.prevPage()" class="w-10 h-10 flex items-center justify-center hover:bg-white rounded-xl transition shadow-sm"><i class="fas fa-chevron-left text-xs"></i></button>
+                    <div class="px-6 text-[11px] font-black text-blue-600">
+                        PÁGINA <span id="current-page">--</span> / <span id="total-pages">--</span>
                     </div>
+                    <button onclick="app.nextPage()" class="w-10 h-10 flex items-center justify-center hover:bg-white rounded-xl transition shadow-sm"><i class="fas fa-chevron-right text-xs"></i></button>
                 </div>
 
-                <div class="flex items-center gap-4">
-                    <button onclick="app.toggleNotes()" class="text-gray-400 hover:text-blue-600"><i class="fas fa-pen-nib"></i></button>
-                </div>
+                <button onclick="app.toggleNotes()" class="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition shadow-sm">
+                    <i class="fas fa-pen-nib"></i>
+                </button>
             </div>
 
             <div class="flex-1 relative flex overflow-hidden">
-                <div id="pdf-render-container">
+                <div id="pdf-render-container" class="relative">
+                    <!-- Overlay de Carga Inteligente -->
+                    <div id="reader-loading-overlay" class="absolute inset-0 bg-[#f4f1ea] flex flex-col items-center justify-center z-[115]">
+                        <div class="loader-ring mb-4"></div>
+                        <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 animate-pulse">Recuperando tu posición...</p>
+                    </div>
                     <!-- El PDF se dibuja aquí -->
                 </div>
 
-                <!-- Panel Notas Lateral -->
-                <div id="notes-panel" class="hidden w-80 bg-white shadow-2xl p-6 flex flex-col absolute right-0 top-0 bottom-0 z-[120] border-l">
-                    <div class="flex justify-between items-center mb-6">
-                        <h4 class="font-black text-sm uppercase tracking-tighter">Tus Apuntes</h4>
-                        <button onclick="app.toggleNotes()"><i class="fas fa-times text-gray-300"></i></button>
+                <!-- PANEL NOTAS -->
+                <div id="notes-panel" class="hidden w-80 bg-white shadow-2xl p-8 flex flex-col absolute right-0 top-0 bottom-0 z-[120] border-l-4 border-blue-600 animate-in slide-in-from-right duration-300">
+                    <div class="flex justify-between items-center mb-8">
+                        <h4 class="font-black text-xl">Apuntes</h4>
+                        <button onclick="app.toggleNotes()" class="text-gray-300 hover:text-red-500 transition"><i class="fas fa-times"></i></button>
                     </div>
-                    <textarea id="book-notes" class="flex-1 w-full p-4 bg-gray-50 border-none rounded-2xl resize-none outline-none text-sm font-medium leading-relaxed" placeholder="Anota algo importante..."></textarea>
-                    <button onclick="app.saveNotes()" class="mt-4 w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-md">Sincronizar Notas</button>
+                    <textarea id="book-notes" class="flex-1 w-full p-5 bg-gray-50 border-none rounded-3xl resize-none outline-none text-sm font-medium leading-relaxed" placeholder="Tus reflexiones aquí..."></textarea>
+                    <button onclick="app.saveNotes()" class="mt-6 w-full bg-blue-600 text-white py-5 rounded-3xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 active:scale-95 transition-all">SINCRONIZAR</button>
                 </div>
             </div>
         </div>
@@ -172,21 +171,13 @@
 
     <script>
         const app = {
-            user: null, 
-            library: [], 
-            currentBook: null,
-            pdfDoc: null,
-            pageNum: 1,
-            isRendering: false,
+            user: null, library: [], currentBook: null, pdfDoc: null, 
+            pageNum: 1, isRendering: false, targetPage: 1,
 
             init() {
-                const saved = localStorage.getItem('duma_v4_session');
-                if (saved) { 
-                    this.user = JSON.parse(saved); 
-                    this.loadLibrary(); 
-                } else { 
-                    this.showView('auth'); 
-                }
+                const saved = localStorage.getItem('duma_final_v5');
+                if (saved) { this.user = JSON.parse(saved); this.loadLibrary(); }
+                else { this.showView('auth'); }
             },
 
             showView(id) {
@@ -207,7 +198,7 @@
                     if (msg && !silent) Swal.close();
                     return res;
                 } catch (e) {
-                    if (msg && !silent) { Swal.close(); Swal.fire('Error', 'No se pudo conectar con el servidor', 'error'); }
+                    if (msg && !silent) { Swal.close(); Swal.fire('Error', 'Servidor no responde', 'error'); }
                     return { status: 'error' };
                 }
             },
@@ -216,16 +207,16 @@
                 const isL = t === 'login';
                 document.getElementById('form-login').classList.toggle('hidden', !isL);
                 document.getElementById('form-register').classList.toggle('hidden', isL);
-                document.getElementById('tab-login').className = isL ? "flex-1 py-2.5 rounded-xl font-bold text-xs transition-all bg-white shadow-sm text-blue-600" : "flex-1 py-2.5 rounded-xl font-bold text-xs transition-all text-gray-400";
-                document.getElementById('tab-register').className = !isL ? "flex-1 py-2.5 rounded-xl font-bold text-xs transition-all bg-white shadow-sm text-blue-600" : "flex-1 py-2.5 rounded-xl font-bold text-xs transition-all text-gray-400";
+                document.getElementById('tab-login').className = isL ? "flex-1 py-3 rounded-xl font-bold text-xs transition-all bg-white shadow-sm text-blue-600" : "flex-1 py-3 rounded-xl font-bold text-xs transition-all text-gray-400";
+                document.getElementById('tab-register').className = !isL ? "flex-1 py-3 rounded-xl font-bold text-xs transition-all bg-white shadow-sm text-blue-600" : "flex-1 py-3 rounded-xl font-bold text-xs transition-all text-gray-400";
             },
 
             async handleLogin(e) {
                 e.preventDefault();
-                const res = await this.api({ action: 'login', username: document.getElementById('login-user').value, password: document.getElementById('login-pass').value }, "Iniciando...");
+                const res = await this.api({ action: 'login', username: document.getElementById('login-user').value, password: document.getElementById('login-pass').value }, "Identificando...");
                 if (res.status === 'success') { 
                     this.user = { id: res.userId, username: res.username };
-                    localStorage.setItem('duma_v4_session', JSON.stringify(this.user));
+                    localStorage.setItem('duma_final_v5', JSON.stringify(this.user));
                     this.loadLibrary();
                 } else Swal.fire('Error', res.message, 'error');
             },
@@ -242,39 +233,35 @@
                 if (res.status === 'success' && res.data) {
                     this.library = res.data;
                     this.library.forEach(b => {
-                        const progress = parseInt(b.progress) || 1;
-                        const isStarted = progress > 1;
+                        const prog = parseInt(b.progress) || 1;
                         grid.innerHTML += `
-                        <div class="group cursor-pointer" onclick="app.openBook('${b.id}')">
-                            <div class="aspect-[3/4] bg-white rounded-2xl border-2 border-transparent group-hover:border-blue-500 shadow-sm group-hover:shadow-xl transition-all mb-3 flex flex-col items-center justify-center p-6 relative overflow-hidden">
-                                <i class="fas ${b.type==='pdf'?'fa-file-pdf':'fa-book'} text-4xl ${isStarted?'text-blue-600':'text-gray-100'} mb-4"></i>
-                                <span class="text-[10px] font-black text-center uppercase tracking-tight line-clamp-2">${b.title}</span>
-                                ${isStarted ? `
-                                <div class="absolute bottom-0 left-0 right-0 h-1.5 bg-gray-100">
-                                    <div class="h-full bg-blue-600" style="width: 100%"></div>
-                                </div>` : ''}
-                                <button onclick="event.stopPropagation(); app.deleteBook('${b.id}')" class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-2 text-gray-300 hover:text-red-500 transition-all"><i class="fas fa-trash-alt text-xs"></i></button>
+                        <div class="group" onclick="app.openBook('${b.id}')">
+                            <div class="aspect-[3/4.5] bg-white rounded-3xl border-2 border-transparent group-hover:border-blue-500 shadow-sm group-hover:shadow-2xl transition-all mb-4 flex flex-col items-center justify-center p-8 relative overflow-hidden cursor-pointer">
+                                <div class="text-5xl ${prog > 1 ? 'text-blue-600' : 'text-gray-100'} mb-6 transition-colors"><i class="fas ${b.type==='pdf'?'fa-file-pdf':'fa-book'}"></i></div>
+                                <span class="text-[11px] font-black text-center uppercase tracking-tight leading-tight line-clamp-3">${b.title}</span>
+                                <button onclick="event.stopPropagation(); app.deleteBook('${b.id}')" class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 p-2 text-gray-300 hover:text-red-500 transition-all"><i class="fas fa-trash-alt text-xs"></i></button>
+                                ${prog > 1 ? '<div class="absolute bottom-0 left-0 h-1.5 bg-blue-600 w-full"></div>' : ''}
                             </div>
-                            <p class="text-[9px] font-black text-gray-400 uppercase text-center">${isStarted ? 'Página ' + progress : 'Nuevo'}</p>
+                            <p class="text-[10px] font-black text-gray-300 uppercase text-center tracking-widest">${prog > 1 ? 'Página ' + prog : 'Nuevo'}</p>
                         </div>`;
                     });
                 }
             },
 
             async openBook(id) {
-                const res = await this.api({ action: 'getLibrary', userId: this.user.id }, "Recuperando progreso...");
-                this.currentBook = res.data.find(b => b.id === id);
-                document.getElementById('book-notes').value = this.currentBook.notes || '';
-                
                 this.showView('reader');
-                const container = document.getElementById('pdf-render-container');
-                container.innerHTML = '<div class="loader mt-20"></div>';
+                document.getElementById('reader-loading-overlay').classList.remove('hidden');
+                
+                // Paso 1: Obtener los datos más frescos del servidor ANTES de cargar nada
+                const res = await this.api({ action: 'getLibrary', userId: this.user.id }, null, true);
+                this.currentBook = res.data.find(b => b.id === id);
+                
+                // Paso 2: Fijar la página de destino
+                this.targetPage = parseInt(this.currentBook.progress) || 1;
+                document.getElementById('book-notes').value = this.currentBook.notes || '';
 
                 if (this.currentBook.type === 'pdf') {
                     this.initPdf(this.currentBook.url);
-                } else {
-                    container.innerHTML = '<div id="epub-viewer" class="w-full h-full bg-white"></div>';
-                    // Aquí iría la carga EPUB (simplificada para este ejemplo)
                 }
             },
 
@@ -284,50 +271,48 @@
                     this.pdfDoc = await loadingTask.promise;
                     document.getElementById('total-pages').textContent = this.pdfDoc.numPages;
                     
-                    // APERTURA INTELIGENTE: Recuperar página guardada
-                    this.pageNum = parseInt(this.currentBook.progress) || 1;
-                    this.renderPage(this.pageNum);
+                    // PASO 3: Ejecutar la Apertura Inteligente
+                    this.renderPage(this.targetPage);
                 } catch (e) {
                     console.error("PDF.js Error", e);
-                    // Fallback nativo si falla el motor avanzado
                     const fileId = url.match(/[-\w]{25,}/);
-                    const driveUrl = `https://drive.google.com/file/d/${fileId}/preview#page=${this.currentBook.progress || 1}`;
-                    document.getElementById('pdf-render-container').innerHTML = `<iframe src="${driveUrl}"></iframe>`;
-                    Swal.fire({ title: 'Modo compatible', text: 'Cargando visor básico de Google.', icon: 'info', timer: 2000 });
+                    const driveUrl = `https://drive.google.com/file/d/${fileId}/preview#page=${this.targetPage}`;
+                    document.getElementById('pdf-render-container').innerHTML = `<iframe src="${driveUrl}" class="w-full h-full"></iframe>`;
+                    document.getElementById('reader-loading-overlay').classList.add('hidden');
                 }
             },
 
             async renderPage(num) {
                 if(this.isRendering) return;
                 this.isRendering = true;
-                
-                const page = await this.pdfDoc.getPage(num);
-                const container = document.getElementById('pdf-render-container');
-                
-                // Escala optimizada para lectura Kindle
-                const viewport = page.getViewport({ scale: 1.5 });
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-
-                container.innerHTML = '';
-                container.appendChild(canvas);
-
-                await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-                this.isRendering = false;
                 this.pageNum = num;
                 
-                document.getElementById('current-page').textContent = num;
-                container.scrollTop = 0;
+                try {
+                    const page = await this.pdfDoc.getPage(num);
+                    const container = document.getElementById('pdf-render-container');
+                    
+                    const viewport = page.getViewport({ scale: 1.5 });
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
 
-                // GUARDADO AUTOMÁTICO SILENCIOSO (Funcionalidad Real)
-                this.api({ 
-                    action: 'updateProgress', 
-                    userId: this.user.id, 
-                    bookId: this.currentBook.id, 
-                    progress: num 
-                }, null, true);
+                    container.innerHTML = '';
+                    container.appendChild(canvas);
+
+                    await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                    
+                    document.getElementById('current-page').textContent = num;
+                    document.getElementById('reader-loading-overlay').classList.add('hidden'); // Solo quitamos el overlay al terminar de dibujar
+                    container.scrollTop = 0;
+                    
+                } catch (err) {
+                    console.error("Error al renderizar página:", err);
+                } finally {
+                    this.isRendering = false;
+                    // Sincronización silenciosa en nube
+                    this.api({ action: 'updateProgress', userId: this.user.id, bookId: this.currentBook.id, progress: num }, null, true);
+                }
             },
 
             prevPage() { if (this.pageNum > 1) this.renderPage(this.pageNum - 1); },
@@ -346,20 +331,20 @@
                 this.toggleNotes();
             },
 
-            async uploadFile(e) {
-                const file = e.target.files[0];
-                if(!file) return;
+            async uploadFile(event) {
+                const file = event.target.files[0];
+                if (!file) return;
                 const reader = new FileReader();
-                reader.onload = async (ev) => {
-                    const base64 = ev.target.result.split(',')[1];
-                    await this.api({ action: 'uploadBook', userId: this.user.id, filename: file.name, mimeType: file.type, base64: base64, title: file.name.split('.')[0] }, "Sincronizando archivo...");
+                reader.onload = async (e) => {
+                    const base64 = e.target.result.split(',')[1];
+                    await this.api({ action: 'uploadBook', userId: this.user.id, filename: file.name, mimeType: file.type, base64: base64, title: file.name.split('.')[0] }, "Subiendo a tu estantería...");
                     this.loadLibrary();
                 };
                 reader.readAsDataURL(file);
             },
 
             async deleteBook(id) {
-                const res = await Swal.fire({ title: '¿Borrar libro?', icon: 'warning', showCancelButton: true });
+                const res = await Swal.fire({ title: '¿Eliminar libro?', icon: 'warning', showCancelButton: true });
                 if (res.isConfirmed) {
                     await this.api({ action: 'deleteBook', userId: this.user.id, bookId: id }, "Borrando...");
                     this.loadLibrary();
